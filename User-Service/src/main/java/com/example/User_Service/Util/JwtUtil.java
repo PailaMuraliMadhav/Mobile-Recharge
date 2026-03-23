@@ -31,8 +31,8 @@ public class JwtUtil {
     public String generateToken(String email, Long userId, String role) {
 
         Map<String, Object> claims = new HashMap<>();
-        claims.put("userId", userId);   // needed for downstream services
-        claims.put("role",   role);     // needed for SecurityConfig hasRole check
+        claims.put("userId", userId);
+        claims.put("role",   role);
 
         return Jwts.builder()
                 .claims(claims)
@@ -43,7 +43,6 @@ public class JwtUtil {
                 .compact();
     }
 
-    // Extract All Claims
     private Claims extractAllClaims(String token) {
         return Jwts.parser()
                 .verifyWith(getSigningKey())
@@ -52,23 +51,19 @@ public class JwtUtil {
                 .getPayload();
     }
 
-    // Extract Email — used in JwtAuthenticationFilter
 
     public String extractEmail(String token) {
         return extractAllClaims(token).getSubject();
     }
 
-    // Extract Role — used in JwtAuthenticationFilter to set ROLE_USER/ADMIN
     public String extractRole(String token) {
         return (String) extractAllClaims(token).get("role");
     }
 
-    // Extract UserId — useful for downstream services
     public Long extractUserId(String token) {
         return ((Number) extractAllClaims(token).get("userId")).longValue();
     }
 
-    // Validate Token — used in JwtAuthenticationFilter
     public boolean validateToken(String token, String email) {
         try {
             String tokenEmail = extractEmail(token);
