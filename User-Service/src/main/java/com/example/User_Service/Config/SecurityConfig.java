@@ -28,12 +28,11 @@ public class SecurityConfig {
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
 
-                        // ── Public — no token needed ──────────────────────────
+
                         .requestMatchers(
                                 "/api/users/register",
                                 "/api/users/login",
 
-                                // ── Swagger URLs — all must be permitted ──────────
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",
                                 "/v3/api-docs",
@@ -45,10 +44,8 @@ public class SecurityConfig {
                                 "/actuator/**"
                         ).permitAll()
 
-                        // ── ADMIN only ────────────────────────────────────────
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
 
-                        // ── Authenticated ─────────────────────────────────────
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter,

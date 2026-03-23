@@ -15,8 +15,7 @@ public class AdminController {
 
     @Autowired
     private UserService userService;
-
-    // ── Get All Users ─────────────────────────────────────────────────────
+//    all users
     @GetMapping("/users")
     public ResponseEntity<List<UserResponse>> getAllUsers() {
         return ResponseEntity
@@ -24,7 +23,7 @@ public class AdminController {
                 .body(userService.getAllUsers());
     }
 
-    // ── Get User By Id ────────────────────────────────────────────────────
+    //  User By Id
     @GetMapping("/users/{id}")
     public ResponseEntity<UserResponse> getUserById(
             @PathVariable Long id) {
@@ -34,7 +33,7 @@ public class AdminController {
     }
 
 
-    // ── Soft Delete ───────────────────────────────────────────────────────
+    // delete
     @DeleteMapping("/users/delete/{id}")
     public ResponseEntity<String> deleteUser(
             @PathVariable Long id) {

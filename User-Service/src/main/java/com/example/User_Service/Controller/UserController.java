@@ -18,7 +18,7 @@ public class UserController {
     @Autowired
     private UserService userService;
 
-    // ── Register ──────────────────────────────────────────────────────────
+    //  Register
     @PostMapping("/register")
     public ResponseEntity<UserResponse> register(
             @RequestBody @Valid RegisterRequest request) {
@@ -27,7 +27,7 @@ public class UserController {
                 .body(userService.register(request));
     }
 
-    // ── Login ─────────────────────────────────────────────────────────────
+    // Login
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(
             @RequestBody @Valid LoginRequest request) {
@@ -36,7 +36,7 @@ public class UserController {
                 .body(userService.login(request));
     }
 
-    // ── Get Own Profile — email from JWT ──────────────────────────────────
+    //  Own Profile
     @GetMapping("/profile")
     public ResponseEntity<UserResponse> getProfile(
             Authentication authentication) {
@@ -45,7 +45,7 @@ public class UserController {
                 .body(userService.getProfile(authentication.getName()));
     }
 
-    // ── Update Own Profile — PATCH ────────────────────────────────────────
+    // Update  Profile
     @PatchMapping("/profile")
     public ResponseEntity<UserResponse> updateProfile(
             Authentication authentication,
@@ -55,7 +55,7 @@ public class UserController {
                 .body(userService.updateProfile(authentication.getName(), request));
     }
 
-    // ── Delete Own Account — permanent ────────────────────────────────────
+    //  Delete Account
     @DeleteMapping("/profile")
     public ResponseEntity<String> deleteMyAccount(
             Authentication authentication) {
@@ -64,7 +64,7 @@ public class UserController {
                 .body(userService.deleteMyAccount(authentication.getName()));
     }
 
-    // ── Recharge History — userId from JWT ────────────────────────────────
+    // Recharge History
     @GetMapping("/recharge-history")
     public ResponseEntity<List<?>> getRechargeHistory(
             Authentication authentication) {
@@ -73,7 +73,7 @@ public class UserController {
                 .body(userService.getRechargeHistoryByEmail(authentication.getName()));
     }
 
-    // ── Transaction Status ────────────────────────────────────────────────
+    // Transaction Status
     @GetMapping("/transaction/{transactionId}")
     public ResponseEntity<Object> getTransactionStatus(
             @PathVariable Long transactionId) {

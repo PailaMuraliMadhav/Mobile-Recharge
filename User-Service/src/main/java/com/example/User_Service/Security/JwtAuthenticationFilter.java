@@ -39,13 +39,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         try {
             String email = jwtUtil.extractEmail(token);
-            String role  = jwtUtil.extractRole(token);  // "USER" or "ADMIN"
+            String role  = jwtUtil.extractRole(token);
 
             if (email != null &&
                     jwtUtil.validateToken(token, email) &&
                     SecurityContextHolder.getContext().getAuthentication() == null) {
 
-                // Spring Security needs "ROLE_USER" or "ROLE_ADMIN"
                 SimpleGrantedAuthority authority =
                         new SimpleGrantedAuthority("ROLE_" + role);
 
@@ -57,7 +56,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
 
         } catch (Exception e) {
-            // Bad token — context stays empty → 401 returned by SecurityConfig
+            //  401 returned by SecurityConfig
         }
 
         filterChain.doFilter(request, response);

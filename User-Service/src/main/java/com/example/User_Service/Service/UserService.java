@@ -29,13 +29,7 @@ public class UserService {
     private final RechargeClient        rechargeServiceClient;
     private final PaymentClient         paymentServiceClient;
 
-    // ═════════════════════════════════════════════════════════════════════
-    // USER METHODS
-    // ═════════════════════════════════════════════════════════════════════
-
-    // ─────────────────────────────────────────────────────────────────────
-    // 1. Register
-    // ─────────────────────────────────────────────────────────────────────
+    //  Register
     public UserResponse register(RegisterRequest request) {
 
         if (userRepository.existsByEmail(request.getEmail())) {
@@ -57,9 +51,7 @@ public class UserService {
         return modelMapper.map(saved, UserResponse.class);
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    // 2. Login
-    // ─────────────────────────────────────────────────────────────────────
+    // Login
     public LoginResponse login(LoginRequest request) {
 
         User user = userRepository.findByEmailAndIsActiveTrue(request.getEmail())
@@ -86,9 +78,7 @@ public class UserService {
         );
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    // 3. Get Profile
-    // ─────────────────────────────────────────────────────────────────────
+    //Get Profile
     public UserResponse getProfile(String email) {
 
         User user = userRepository.findByEmailAndIsActiveTrue(email)
@@ -98,9 +88,7 @@ public class UserService {
         return modelMapper.map(user, UserResponse.class);
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    // 4. Update Profile
-    // ─────────────────────────────────────────────────────────────────────
+    //  Update
     public UserResponse updateProfile(String email, UpdateProfile request) {
 
         User user = userRepository.findByEmailAndIsActiveTrue(email)
@@ -124,9 +112,7 @@ public class UserService {
         return modelMapper.map(updated, UserResponse.class);
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    // 5. Delete Own Account — permanent (user deletes themselves)
-    // ─────────────────────────────────────────────────────────────────────
+    // 5. Delete permanent
     public String deleteMyAccount(String email) {
 
         User user = userRepository.findByEmailAndIsActiveTrue(email)
@@ -137,9 +123,8 @@ public class UserService {
         return "Your account has been permanently deleted";
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    // 6. Recharge History — email from JWT → find userId → Feign call
-    // ─────────────────────────────────────────────────────────────────────
+    //Recharge History — email from JWT → find userId → Feign call
+
     public List<?> getRechargeHistoryByEmail(String email) {
 
         User user = userRepository.findByEmailAndIsActiveTrue(email)
@@ -154,9 +139,8 @@ public class UserService {
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    // 7. Transaction Status — Feign
-    // ─────────────────────────────────────────────────────────────────────
+//    Transaction Status — Feign
+
     public Object getTransactionStatus(Long transactionId) {
 
         try {
@@ -167,13 +151,7 @@ public class UserService {
         }
     }
 
-    // ═════════════════════════════════════════════════════════════════════
-    // ADMIN METHODS
-    // ═════════════════════════════════════════════════════════════════════
-
-    // ─────────────────────────────────────────────────────────────────────
-    // 8. Get All Users
-    // ─────────────────────────────────────────────────────────────────────
+//     Get All Users
     public List<UserResponse> getAllUsers() {
 
         return userRepository.findAll()
@@ -182,10 +160,7 @@ public class UserService {
                 .collect(Collectors.toList());
     }
 
-
-    // ─────────────────────────────────────────────────────────────────────
-    // 10. Get User By Id
-    // ─────────────────────────────────────────────────────────────────────
+    //get user by id
     public UserResponse getUserById(Long id) {
 
         User user = userRepository.findById(id)
@@ -195,10 +170,7 @@ public class UserService {
         return modelMapper.map(user, UserResponse.class);
     }
 
-
-    // ─────────────────────────────────────────────────────────────────────
-    // 12. Soft Delete — admin deactivates user
-    // ─────────────────────────────────────────────────────────────────────
+    // delete but not permanant
     public String deleteUser(Long id) {
 
         User user = userRepository.findById(id)

@@ -15,27 +15,19 @@ import java.util.Map;
 
 @Component
 public class JwtUtil {
-
+  // from application properties
     @Value("${jwt.secret}")
     private String secret;
-
-    // ─────────────────────────────────────────────────────────────────────
-    // Get Expiration — used in JwtResponse
-    // ─────────────────────────────────────────────────────────────────────
     @Getter
     @Value("${jwt.expiration}")
     private long expiration;
 
-    // ─────────────────────────────────────────────────────────────────────
-    // Signing Key
-    // ─────────────────────────────────────────────────────────────────────
     private SecretKey getSigningKey() {
         return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
-    // ─────────────────────────────────────────────────────────────────────
     // Generate Token — called in UserService.login()
-    // ─────────────────────────────────────────────────────────────────────
+
     public String generateToken(String email, Long userId, String role) {
 
         Map<String, Object> claims = new HashMap<>();
@@ -51,9 +43,7 @@ public class JwtUtil {
                 .compact();
     }
 
-    // ─────────────────────────────────────────────────────────────────────
     // Extract All Claims
-    // ─────────────────────────────────────────────────────────────────────
     private Claims extractAllClaims(String token) {
         return Jwts.parser()
                 .verifyWith(getSigningKey())
@@ -62,30 +52,23 @@ public class JwtUtil {
                 .getPayload();
     }
 
-    // ─────────────────────────────────────────────────────────────────────
     // Extract Email — used in JwtAuthenticationFilter
-    // ─────────────────────────────────────────────────────────────────────
+
     public String extractEmail(String token) {
         return extractAllClaims(token).getSubject();
     }
 
-    // ─────────────────────────────────────────────────────────────────────
     // Extract Role — used in JwtAuthenticationFilter to set ROLE_USER/ADMIN
-    // ─────────────────────────────────────────────────────────────────────
     public String extractRole(String token) {
         return (String) extractAllClaims(token).get("role");
     }
 
-    // ─────────────────────────────────────────────────────────────────────
     // Extract UserId — useful for downstream services
-    // ─────────────────────────────────────────────────────────────────────
     public Long extractUserId(String token) {
         return ((Number) extractAllClaims(token).get("userId")).longValue();
     }
 
-    // ─────────────────────────────────────────────────────────────────────
     // Validate Token — used in JwtAuthenticationFilter
-    // ─────────────────────────────────────────────────────────────────────
     public boolean validateToken(String token, String email) {
         try {
             String tokenEmail = extractEmail(token);

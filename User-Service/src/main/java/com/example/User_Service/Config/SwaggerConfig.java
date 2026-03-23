@@ -19,7 +19,6 @@ import org.springframework.context.annotation.Configuration;
                             .description("User registration, login, profile and admin management")
                             .version("v1.0.0"))
 
-                    // ── This adds the Authorize button with Bearer JWT ─────
                     .addSecurityItem(new SecurityRequirement()
                             .addList("bearerAuth"))
 
