@@ -1,4 +1,4 @@
-package com.example.User_Service.Util;
+package com.example.User_Service.Security;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -15,9 +15,10 @@ import java.util.Map;
 
 @Component
 public class JwtUtil {
-  // from application properties
+
     @Value("${jwt.secret}")
     private String secret;
+
     @Getter
     @Value("${jwt.expiration}")
     private long expiration;
@@ -26,13 +27,10 @@ public class JwtUtil {
         return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
-    // Generate Token — called in UserService.login()
-
     public String generateToken(String email, Long userId, String role) {
-
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId", userId);
-        claims.put("role",   role);
+        claims.put("role", role);
 
         return Jwts.builder()
                 .claims(claims)
@@ -43,15 +41,6 @@ public class JwtUtil {
                 .compact();
     }
 
-    private Claims extractAllClaims(String token) {
-        return Jwts.parser()
-                .verifyWith(getSigningKey())
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
-    }
-
-
     public String extractEmail(String token) {
         return extractAllClaims(token).getSubject();
     }
@@ -60,18 +49,21 @@ public class JwtUtil {
         return (String) extractAllClaims(token).get("role");
     }
 
-    public Long extractUserId(String token) {
-        return ((Number) extractAllClaims(token).get("userId")).longValue();
+    private Claims extractAllClaims(String token) {
+        return Jwts.parser()
+                .verifyWith(getSigningKey())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
     }
 
     public boolean validateToken(String token, String email) {
         try {
             String tokenEmail = extractEmail(token);
-            Date   expiry     = extractAllClaims(token).getExpiration();
+            Date expiry = extractAllClaims(token).getExpiration();
             return tokenEmail.equals(email) && expiry.after(new Date());
         } catch (Exception e) {
             return false;
         }
     }
-
 }

@@ -9,10 +9,10 @@ import com.example.User_Service.Exceptions.NotFoundException;
 import com.example.User_Service.FeignClients.PaymentClient;
 import com.example.User_Service.FeignClients.RechargeClient;
 import com.example.User_Service.Repository.UserRepository;
-import com.example.User_Service.Util.JwtUtil;
+import com.example.User_Service.Security.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -25,7 +25,7 @@ public class UserService {
     private final ModelMapper           modelMapper;
     private final JwtUtil               jwtUtil;
     private final UserRepository        userRepository;
-    private final BCryptPasswordEncoder passwordEncoder;
+    private final PasswordEncoder passwordEncoder;
     private final RechargeClient        rechargeServiceClient;
     private final PaymentClient         paymentServiceClient;
 
