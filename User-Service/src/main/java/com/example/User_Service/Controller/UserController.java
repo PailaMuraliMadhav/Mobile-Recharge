@@ -2,7 +2,6 @@ package com.example.User_Service.Controller;
 
 import com.example.User_Service.Dto.*;
 import com.example.User_Service.Service.UserService;
-import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,24 +16,6 @@ public class UserController {
 
     @Autowired
     private UserService userService;
-
-    //  Register
-    @PostMapping("/register")
-    public ResponseEntity<UserResponse> register(
-            @RequestBody @Valid RegisterRequest request) {
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(userService.register(request));
-    }
-
-    // Login
-    @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(
-            @RequestBody @Valid LoginRequest request) {
-        return ResponseEntity
-                .status(HttpStatus.OK)
-                .body(userService.login(request));
-    }
 
     //  Own Profile
     @GetMapping("/profile")

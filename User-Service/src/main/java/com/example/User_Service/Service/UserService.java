@@ -9,10 +9,10 @@ import com.example.User_Service.Exceptions.NotFoundException;
 import com.example.User_Service.FeignClients.PaymentClient;
 import com.example.User_Service.FeignClients.RechargeClient;
 import com.example.User_Service.Repository.UserRepository;
-import com.example.User_Service.Util.JwtUtil;
+import com.example.User_Service.Security.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -25,7 +25,7 @@ public class UserService {
     private final ModelMapper           modelMapper;
     private final JwtUtil               jwtUtil;
     private final UserRepository        userRepository;
-    private final BCryptPasswordEncoder passwordEncoder;
+    private final PasswordEncoder passwordEncoder;
     private final RechargeClient        rechargeServiceClient;
     private final PaymentClient         paymentServiceClient;
 
@@ -76,6 +76,36 @@ public class UserService {
                 user.getRole(),
                 jwtUtil.getExpiration()
         );
+    }
+    //     Get All Users
+    public List<UserResponse> getAllUsers() {
+
+        return userRepository.findAll()
+                .stream()
+                .map(user -> modelMapper.map(user, UserResponse.class))
+                .collect(Collectors.toList());
+    }
+
+    //get user by id
+    public UserResponse getUserById(Long id) {
+
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException(
+                        "User not found with id: " + id));
+
+        return modelMapper.map(user, UserResponse.class);
+    }
+
+    // delete but not permanant
+    public String deleteUser(Long id) {
+
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException(
+                        "User not found with id: " + id));
+
+        user.setIsActive(false);
+        userRepository.save(user);
+        return "User deleted successfully";
     }
 
     //Get Profile
@@ -151,34 +181,5 @@ public class UserService {
         }
     }
 
-//     Get All Users
-    public List<UserResponse> getAllUsers() {
 
-        return userRepository.findAll()
-                .stream()
-                .map(user -> modelMapper.map(user, UserResponse.class))
-                .collect(Collectors.toList());
-    }
-
-    //get user by id
-    public UserResponse getUserById(Long id) {
-
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException(
-                        "User not found with id: " + id));
-
-        return modelMapper.map(user, UserResponse.class);
-    }
-
-    // delete but not permanant
-    public String deleteUser(Long id) {
-
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException(
-                        "User not found with id: " + id));
-
-        user.setIsActive(false);
-        userRepository.save(user);
-        return "User deleted successfully";
-    }
 }
