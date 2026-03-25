@@ -21,6 +21,15 @@
         <module name="UserService" />
         <module name="User-Service" />
       </profile>
+      <profile name="Annotation profile for OperatorService" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="false">
+          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.44/lombok-1.18.44.jar" />
+        </processorPath>
+        <module name="OperatorService" />
+      </profile>
     </annotationProcessing>
   </component>
   <component name="JavacSettings">
@@ -28,6 +37,7 @@
       <module name="Api-Gateway" options="-parameters" />
       <module name="Config-Server" options="-parameters" />
       <module name="Eureka-Server" options="-parameters" />
+      <module name="OperatorService" options="-parameters" />
       <module name="User-Service" options="-parameters" />
       <module name="UserService" options="-parameters" />
     </option>

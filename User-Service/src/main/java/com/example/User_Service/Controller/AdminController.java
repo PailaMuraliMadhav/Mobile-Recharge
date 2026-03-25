@@ -14,6 +14,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AdminController {
 
+    @Autowired
+    private UserService userService;
     private final UserService userService;
 
     @GetMapping("/users")
