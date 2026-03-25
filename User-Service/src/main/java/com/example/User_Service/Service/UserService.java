@@ -171,7 +171,7 @@ public class UserService {
 
 //    Transaction Status — Feign
 
-    public Object getTransactionStatus(Long transactionId) {
+    public Object getTransactionStatus(String transactionId) {
 
         try {
             return paymentServiceClient.getTransactionStatus(transactionId);

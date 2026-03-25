@@ -57,7 +57,7 @@ public class UserController {
     // Transaction Status
     @GetMapping("/transaction/{transactionId}")
     public ResponseEntity<Object> getTransactionStatus(
-            @PathVariable Long transactionId) {
+            @PathVariable String transactionId) {
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(userService.getTransactionStatus(transactionId));

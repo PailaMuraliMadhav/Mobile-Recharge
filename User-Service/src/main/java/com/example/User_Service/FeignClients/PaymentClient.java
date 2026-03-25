@@ -7,5 +7,5 @@ import org.springframework.web.bind.annotation.PathVariable;
 @FeignClient(name = "payment-service")
 public interface PaymentClient {
     @GetMapping("/api/payments/{transactionId}")
-    Object getTransactionStatus(@PathVariable("transactionId") Long transactionId);
+    Object getTransactionStatus(@PathVariable("transactionId")String transactionId);
 }
