@@ -77,6 +77,36 @@ public class UserService {
                 jwtUtil.getExpiration()
         );
     }
+    //     Get All Users
+    public List<UserResponse> getAllUsers() {
+
+        return userRepository.findAll()
+                .stream()
+                .map(user -> modelMapper.map(user, UserResponse.class))
+                .collect(Collectors.toList());
+    }
+
+    //get user by id
+    public UserResponse getUserById(Long id) {
+
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException(
+                        "User not found with id: " + id));
+
+        return modelMapper.map(user, UserResponse.class);
+    }
+
+    // delete but not permanant
+    public String deleteUser(Long id) {
+
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException(
+                        "User not found with id: " + id));
+
+        user.setIsActive(false);
+        userRepository.save(user);
+        return "User deleted successfully";
+    }
 
     //Get Profile
     public UserResponse getProfile(String email) {
@@ -151,34 +181,5 @@ public class UserService {
         }
     }
 
-//     Get All Users
-    public List<UserResponse> getAllUsers() {
 
-        return userRepository.findAll()
-                .stream()
-                .map(user -> modelMapper.map(user, UserResponse.class))
-                .collect(Collectors.toList());
-    }
-
-    //get user by id
-    public UserResponse getUserById(Long id) {
-
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException(
-                        "User not found with id: " + id));
-
-        return modelMapper.map(user, UserResponse.class);
-    }
-
-    // delete but not permanant
-    public String deleteUser(Long id) {
-
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException(
-                        "User not found with id: " + id));
-
-        user.setIsActive(false);
-        userRepository.save(user);
-        return "User deleted successfully";
-    }
 }

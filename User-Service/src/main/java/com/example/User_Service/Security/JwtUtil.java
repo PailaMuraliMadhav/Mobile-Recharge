@@ -12,7 +12,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-
 @Component
 public class JwtUtil {
 
@@ -60,10 +59,13 @@ public class JwtUtil {
     public boolean validateToken(String token, String email) {
         try {
             String tokenEmail = extractEmail(token);
-            Date expiry = extractAllClaims(token).getExpiration();
-            return tokenEmail.equals(email) && expiry.after(new Date());
+            return (tokenEmail.equals(email) && !isTokenExpired(token));
         } catch (Exception e) {
             return false;
         }
+    }
+
+    private boolean isTokenExpired(String token) {
+        return extractAllClaims(token).getExpiration().before(new Date());
     }
 }

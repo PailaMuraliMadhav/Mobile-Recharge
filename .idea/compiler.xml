@@ -18,6 +18,7 @@
           <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.42/lombok-1.18.42.jar" />
         </processorPath>
         <module name="Api-Gateway" />
+        <module name="UserService" />
         <module name="User-Service" />
       </profile>
       <profile name="Annotation profile for OperatorService" enabled="true">
