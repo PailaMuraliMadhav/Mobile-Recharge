@@ -18,58 +18,53 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-
 @Service
 @RequiredArgsConstructor
 public class RechargeService {
 
-    private final RechargeRepository rechargeRepository;
-    private final OperatorClient operatorClient;
-    private final PaymentClient paymentClient;
-    private final RabbitTemplate rabbitTemplate;
-    private final ModelMapper modelMapper;
+    private final RechargeRepository    rechargeRepository;
+    private final OperatorClient        operatorClient;
+    private final PaymentClient         paymentClient;
+    private final RabbitTemplate        rabbitTemplate;
+    private final ModelMapper           modelMapper;
 
     @Transactional
     public RechargeResponse processRecharge(RechargeRequest request) {
 
-        // 1️⃣ Validate Operator
+        // Validate operator exists and is active
         OperatorResponse operator =
                 operatorClient.getOperatorById(request.getOperatorId());
 
-        if (operator == null) {
-            throw new NotFoundException(
-                    "Operator not found with id: " + request.getOperatorId());
+        if (operator == null || !operator.getIsActive()) {
+            throw new BadRequestException(
+                    "Operator is not available. Please try another operator.");
         }
 
-        if (!operator.getIsActive()) {
-            throw new BadRequestException("Operator is inactive");
-        }
-
-        // 2️⃣ Fetch Plan
+        // Validate plan exists and is still offered
         PlanResponse plan =
                 operatorClient.getPlanById(request.getPlanId());
 
-        if (plan == null) {
-            throw new NotFoundException(
-                    "Plan not found with id: " + request.getPlanId());
-        }
-
-        if (!plan.getIsActive()) {
-            throw new BadRequestException("Plan is inactive");
-        }
-
-        // 3️⃣ Prevent duplicate successful recharge
-        if (rechargeRepository.existsByUserIdAndMobileNumberAndPlanIdAndStatus(
-                request.getUserId(),
-                request.getMobileNumber(),
-                request.getPlanId(),
-                RechargeStatus.SUCCESS)) {
-
+        if (plan == null || !plan.getIsActive()) {
             throw new BadRequestException(
-                    "Recharge already completed for this mobile number with this plan");
+                    "This plan is no longer available. Please choose another plan.");
         }
 
-        // 4️⃣ Create Recharge Record (PENDING)
+        // Prevent recharge if same plan is already active on this number
+        boolean alreadyActive =
+                rechargeRepository
+                        .existsByUserIdAndMobileNumberAndPlanIdAndStatus(
+                                request.getUserId(),
+                                request.getMobileNumber(),
+                                request.getPlanId(),
+                                RechargeStatus.SUCCESS);
+
+        if (alreadyActive) {
+            throw new BadRequestException(
+                    "You already have an active recharge for this plan. " +
+                            "Please wait for it to expire before recharging again.");
+        }
+
+        // Save recharge order as PENDING before payment
         Recharge recharge = Recharge.builder()
                 .userId(request.getUserId())
                 .operatorId(request.getOperatorId())
@@ -81,70 +76,94 @@ public class RechargeService {
 
         recharge = rechargeRepository.save(recharge);
 
-        try {
+        // Call payment service to deduct amount from user
+        PaymentResponse paymentResponse;
 
-            // 5️⃣ Call Payment Service
+        try {
             PaymentRequest paymentRequest = new PaymentRequest();
             paymentRequest.setRechargeId(recharge.getId());
             paymentRequest.setUserId(request.getUserId());
             paymentRequest.setAmount(plan.getPrice());
 
-            PaymentResponse paymentResponse =
-                    paymentClient.processPayment(paymentRequest);
-
-            // 6️⃣ Store Transaction ID
-            recharge.setTransactionId(
-                    paymentResponse.getTransactionId());
-
-            // 7️⃣ Update Recharge Status
-            if ("SUCCESS".equalsIgnoreCase(
-                    paymentResponse.getStatus().name())) {
-
-                recharge.setStatus(RechargeStatus.SUCCESS);
-
-            } else {
-
-                recharge.setStatus(RechargeStatus.FAILED);
-            }
+            paymentResponse = paymentClient.processPayment(paymentRequest);
+            recharge.setTransactionId(paymentResponse.getTransactionId());
 
         } catch (Exception ex) {
-
+            // Mark failed if payment gateway is unreachable
             recharge.setStatus(RechargeStatus.FAILED);
-
+            rechargeRepository.save(recharge);
             throw new BadRequestException(
-                    "Payment failed: " + ex.getMessage());
+                    "Payment gateway unavailable. Please try again. " +
+                            "No amount has been deducted.");
         }
 
+        // Mark recharge failed and stop if payment was unsuccessful
+        if (!"SUCCESS".equalsIgnoreCase(paymentResponse.getStatus().name())) {
+            recharge.setStatus(RechargeStatus.FAILED);
+            rechargeRepository.save(recharge);
+            throw new BadRequestException(
+                    "Payment failed. Please check your payment method " +
+                            "and try again. If amount was deducted, " +
+                            "it will be refunded within 5-7 business days.");
+        }
+
+        // Keep status as PENDING until operator confirms activation
+        recharge.setStatus(RechargeStatus.PENDING);
         rechargeRepository.save(recharge);
 
-        // 8️⃣ Publish RabbitMQ Event
+        // Publish recharge event to operator via RabbitMQ for async activation
         rabbitTemplate.convertAndSend(
                 RabbitMQConfig.RECHARGE_EXCHANGE,
                 RabbitMQConfig.RECHARGE_ROUTING_KEY,
                 recharge
         );
 
-        // 9️⃣ Return Response
-        return modelMapper.map(recharge, RechargeResponse.class);
+        // Return response informing user that activation is in progress
+        RechargeResponse response =
+                modelMapper.map(recharge, RechargeResponse.class);
+
+        return response;
     }
 
-    // Get All Recharges
-    public List<RechargeResponse> getAllRecharges() {
+    // Update recharge status based on operator network callback
+    @Transactional
+    public void handleOperatorCallback(Long rechargeId, String operatorStatus) {
 
+        Recharge recharge = rechargeRepository.findById(rechargeId)
+                .orElseThrow(() -> new NotFoundException(
+                        "Recharge not found: " + rechargeId));
+
+        if ("SUCCESS".equalsIgnoreCase(operatorStatus)) {
+            // Activate plan and notify user on success
+            recharge.setStatus(RechargeStatus.SUCCESS);
+        } else {
+            // Trigger refund and notify user on failure
+            recharge.setStatus(RechargeStatus.FAILED);
+        }
+
+        rechargeRepository.save(recharge);
+
+        // Publish final status to notification service
+        rabbitTemplate.convertAndSend(
+                RabbitMQConfig.RECHARGE_EXCHANGE,
+                RabbitMQConfig.RECHARGE_ROUTING_KEY,
+                recharge
+        );
+    }
+
+    // Fetch all recharges for admin view
+    public List<RechargeResponse> getAllRecharges() {
         return rechargeRepository.findAll()
                 .stream()
-                .map(recharge ->
-                        modelMapper.map(recharge, RechargeResponse.class))
+                .map(recharge -> modelMapper.map(recharge, RechargeResponse.class))
                 .toList();
     }
 
-    // Get Recharge History By User
+    // Fetch recharge history for a specific user
     public List<RechargeResponse> getRechargeHistory(Long userId) {
-
         return rechargeRepository.findByUserId(userId)
                 .stream()
-                .map(recharge ->
-                        modelMapper.map(recharge, RechargeResponse.class))
+                .map(recharge -> modelMapper.map(recharge, RechargeResponse.class))
                 .toList();
     }
 }

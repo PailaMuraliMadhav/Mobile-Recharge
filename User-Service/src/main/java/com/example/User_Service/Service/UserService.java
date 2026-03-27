@@ -152,6 +152,15 @@ public class UserService {
         userRepository.deleteById(user.getId());
         return "Your account has been permanently deleted";
     }
+    public String permanentDeleteUser(Long id) {
+
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException(
+                        "User not found with id: " + id));
+
+        userRepository.deleteById(user.getId());
+        return "User with id " + id + " has been permanently deleted";
+    }
 
     //Recharge History — email from JWT → find userId → Feign call
 

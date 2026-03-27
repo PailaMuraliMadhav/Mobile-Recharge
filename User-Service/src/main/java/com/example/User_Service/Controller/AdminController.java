@@ -33,4 +33,8 @@ public class AdminController {
     public ResponseEntity<String> deleteUser(@PathVariable Long id) {
         return ResponseEntity.ok(userService.deleteUser(id));
     }
+    @DeleteMapping("/users/{id}/permanent")
+    public ResponseEntity<String> permanentDeleteUser(@PathVariable Long id) {
+        return ResponseEntity.ok(userService.permanentDeleteUser(id));
+    }
 }
