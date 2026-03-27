@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -56,4 +57,13 @@ public class PaymentService {
                 .amount(payment.getAmount())
                 .build();
     }
+    // Inside PaymentService.java
+
+    public List<PaymentResponseDto> getPaymentHistoryByUserId(Long userId) {
+        return paymentRepository.findByUserId(userId)
+                .stream()
+                .map(payment -> modelMapper.map(payment, PaymentResponseDto.class))
+                .toList();
+    }
+
 }

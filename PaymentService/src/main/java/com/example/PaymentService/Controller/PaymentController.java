@@ -11,6 +11,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/payments")
 @RequiredArgsConstructor
@@ -34,5 +36,12 @@ public class PaymentController {
         return ResponseEntity.ok(
                 paymentService.getTransactionStatus(transactionId)
         );
+    }
+    // Inside PaymentController.java
+
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<List<PaymentResponseDto>> getHistory(@PathVariable Long userId) {
+        List<PaymentResponseDto> history = paymentService.getPaymentHistoryByUserId(userId);
+        return ResponseEntity.ok(history);
     }
 }
