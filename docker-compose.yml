@@ -1,0 +1,221 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: "${MYSQL_PASSWORD}"
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - microservice-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - microservice-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  config-server:
+    build: ./config-server
+    image: mobile-recharge-config-server:latest
+    container_name: config-server
+    env_file:
+      - .env
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./config-server/config-repo:/app/config-repo
+    environment:
+      - "SPRING_PROFILES_ACTIVE=native"
+      - "SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH_LOCATIONS=file:///app/config-repo"
+    networks:
+      - microservice-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8888/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  eureka-server:
+    build: ./eureka-server
+    image: mobile-recharge-eureka-server:latest
+    container_name: eureka-server
+    ports:
+      - "8761:8761"
+    environment:
+      - "SPRING_CONFIG_IMPORT=configserver:http://config-server:8888"
+    depends_on:
+      config-server:
+        condition: service_healthy
+    networks:
+      - microservice-network
+    restart: on-failure
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8761/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  api-gateway:
+    build: ./api-gateway
+    image: mobile-recharge-api-gateway:latest
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      config-server:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    environment:
+      - "SPRING_CONFIG_IMPORT=configserver:http://config-server:8888"
+      - "EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/"
+      - "JWT_SECRET=${JWT_SECRET}"
+    networks:
+      - microservice-network
+    restart: on-failure
+
+  user-service:
+    build: ./user-service
+    image: mobile-recharge-user-service:latest
+    container_name: user-service
+    ports:
+      - "8081:8081"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: on-failure
+    depends_on:
+      config-server:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    environment:
+      - "SPRING_CONFIG_IMPORT=configserver:http://config-server:8888"
+      - "EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/"
+      - "SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/omni_user?createDatabaseIfNotExist=true"
+      - "SPRING_DATASOURCE_USERNAME=root"
+      - "SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD}"
+      - "JWT_SECRET=${JWT_SECRET}"
+    networks:
+      - microservice-network
+
+  operator-service:
+    build: ./OperatorService
+    image: mobile-recharge-operator-service:latest
+    container_name: operator-service
+    ports:
+      - "8082:8082"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: on-failure
+    depends_on:
+      config-server:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    environment:
+      - "SPRING_CONFIG_IMPORT=configserver:http://config-server:8888"
+      - "EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/"
+      - "SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/omni_operator?createDatabaseIfNotExist=true"
+      - "SPRING_DATASOURCE_USERNAME=root"
+      - "SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD}"
+      - "JWT_SECRET=${JWT_SECRET}"
+    networks:
+      - microservice-network
+
+  recharge-service:
+    build: ./RechargeService
+    image: mobile-recharge-recharge-service:latest
+    container_name: recharge-service
+    ports:
+      - "8083:8083"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: on-failure
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    environment:
+      - "SPRING_CONFIG_IMPORT=configserver:http://config-server:8888"
+      - "EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/"
+      - "SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/omni_recharge?createDatabaseIfNotExist=true"
+      - "SPRING_DATASOURCE_USERNAME=root"
+      - "SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD}"
+      - "SPRING_RABBITMQ_HOST=rabbitmq"
+    networks:
+      - microservice-network
+
+  payment-service:
+    build: ./PaymentService
+    image: mobile-recharge-payment-service:latest
+    container_name: payment-service
+    ports:
+      - "8084:8084"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: on-failure
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    environment:
+      - "SPRING_CONFIG_IMPORT=configserver:http://config-server:8888"
+      - "EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/"
+      - "SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/omni_payment?createDatabaseIfNotExist=true"
+      - "SPRING_DATASOURCE_USERNAME=root"
+      - "SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD}"
+      - "SPRING_RABBITMQ_HOST=rabbitmq"
+    networks:
+      - microservice-network
+
+  notification-service:
+    build: ./NotificationService
+    image: mobile-recharge-notification-service:latest
+    container_name: notification-service
+    ports:
+      - "8085:8085"
+    restart: on-failure
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    environment:
+      - "SPRING_CONFIG_IMPORT=configserver:http://config-server:8888"
+      - "EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/"
+      - "SPRING_RABBITMQ_HOST=rabbitmq"
+    networks:
+      - microservice-network
+
+volumes:
+  mysql_data:
+
+networks:
+  microservice-network:
+    driver: bridge
