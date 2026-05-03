@@ -8,6 +8,7 @@ import com.example.rechargeservice.exceptions.BadRequestException;
 import com.example.rechargeservice.exceptions.NotFoundException;
 import com.example.rechargeservice.feignclients.OperatorClient;
 import com.example.rechargeservice.feignclients.PaymentClient;
+import com.example.rechargeservice.feignclients.UserClient;
 import com.example.rechargeservice.repository.RechargeRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,6 +34,7 @@ class RechargeServiceTest {
     @Mock private RechargeRepository rechargeRepository;
     @Mock private OperatorClient operatorClient;
     @Mock private PaymentClient paymentClient;
+    @Mock private UserClient userClient;
     @Mock private RabbitTemplate rabbitTemplate;
     @Mock private ModelMapper modelMapper;
 
@@ -43,6 +45,7 @@ class RechargeServiceTest {
     private PlanResponse planResponse;
     private PaymentResponse paymentResponse;
     private Recharge dummyRecharge;
+    private UserResponse userResponse;
 
     @BeforeEach
     void setUp() {
@@ -69,6 +72,9 @@ class RechargeServiceTest {
         dummyRecharge.setId(1L);
         dummyRecharge.setMobileNumber("9876543210");
         dummyRecharge.setStatus(RechargeStatus.PENDING);
+
+        userResponse = new UserResponse();
+        userResponse.setEmail("test@gmail.com");
     }
 
     // --- processRecharge Tests ---
@@ -77,6 +83,7 @@ class RechargeServiceTest {
     void testProcessRecharge_Success() {
         when(operatorClient.getOperatorById(10L)).thenReturn(operatorResponse);
         when(operatorClient.getPlanById(100L)).thenReturn(planResponse);
+        when(userClient.getUserById(1L)).thenReturn(userResponse);
         when(rechargeRepository.existsByUserIdAndMobileNumberAndPlanIdAndStatus(anyLong(), anyString(), anyLong(), eq(RechargeStatus.SUCCESS))).thenReturn(false);
         when(rechargeRepository.save(any(Recharge.class))).thenReturn(dummyRecharge);
         when(paymentClient.processPayment(any(PaymentRequest.class))).thenReturn(paymentResponse);
@@ -85,7 +92,8 @@ class RechargeServiceTest {
         RechargeResponse result = rechargeService.processRecharge(request);
 
         assertNotNull(result);
-        verify(rabbitTemplate).convertAndSend(eq(RabbitMQConfig.RECHARGE_EXCHANGE), eq(RabbitMQConfig.RECHARGE_ROUTING_KEY), any(Recharge.class));
+        // RabbitMQ is called twice: once for PENDING status, once for SUCCESS
+        verify(rabbitTemplate, times(2)).convertAndSend(eq(RabbitMQConfig.RECHARGE_EXCHANGE), eq(RabbitMQConfig.RECHARGE_ROUTING_KEY), any(Recharge.class));
     }
 
     @Test
@@ -109,6 +117,7 @@ class RechargeServiceTest {
     void testProcessRecharge_AlreadyActive() {
         when(operatorClient.getOperatorById(10L)).thenReturn(operatorResponse);
         when(operatorClient.getPlanById(100L)).thenReturn(planResponse);
+        when(userClient.getUserById(1L)).thenReturn(userResponse);
         when(rechargeRepository.existsByUserIdAndMobileNumberAndPlanIdAndStatus(anyLong(), anyString(), anyLong(), eq(RechargeStatus.SUCCESS))).thenReturn(true);
 
         assertThrows(BadRequestException.class, () -> rechargeService.processRecharge(request));
@@ -118,6 +127,7 @@ class RechargeServiceTest {
     void testProcessRecharge_PaymentClientThrowsException() {
         when(operatorClient.getOperatorById(anyLong())).thenReturn(operatorResponse);
         when(operatorClient.getPlanById(anyLong())).thenReturn(planResponse);
+        when(userClient.getUserById(anyLong())).thenReturn(userResponse);
         when(rechargeRepository.save(any())).thenReturn(dummyRecharge);
         when(paymentClient.processPayment(any())).thenThrow(new RuntimeException("Network Error"));
 
@@ -129,9 +139,10 @@ class RechargeServiceTest {
     void testProcessRecharge_PaymentStatusNotSuccess() {
         when(operatorClient.getOperatorById(anyLong())).thenReturn(operatorResponse);
         when(operatorClient.getPlanById(anyLong())).thenReturn(planResponse);
+        when(userClient.getUserById(anyLong())).thenReturn(userResponse);
         when(rechargeRepository.save(any())).thenReturn(dummyRecharge);
 
-        paymentResponse.setStatus(RechargeStatus.FAILED); // Force failure status
+        paymentResponse.setStatus(RechargeStatus.FAILED);
         when(paymentClient.processPayment(any())).thenReturn(paymentResponse);
 
         assertThrows(BadRequestException.class, () -> rechargeService.processRecharge(request));
@@ -181,5 +192,105 @@ class RechargeServiceTest {
 
         List<RechargeResponse> result = rechargeService.getRechargeHistory(1L);
         assertEquals(1, result.size());
+    }
+
+    // --- recordCancelledRecharge Tests ---
+
+    @Test
+    void testRecordCancelledRecharge_Success() {
+        planResponse.setName("Basic");
+        planResponse.setData("1GB");
+        planResponse.setValidityDays(28);
+        operatorResponse.setName("Jio");
+        when(operatorClient.getOperatorById(10L)).thenReturn(operatorResponse);
+        when(operatorClient.getPlanById(100L)).thenReturn(planResponse);
+        when(userClient.getUserById(1L)).thenReturn(userResponse);
+        when(rechargeRepository.save(any(Recharge.class))).thenReturn(dummyRecharge);
+        when(modelMapper.map(any(), eq(RechargeResponse.class))).thenReturn(new RechargeResponse());
+
+        request.setPaymentMode("CANCELLED");
+        RechargeResponse result = rechargeService.recordCancelledRecharge(request);
+
+        assertNotNull(result);
+        verify(rechargeRepository).save(any(Recharge.class));
+        verify(rabbitTemplate).convertAndSend(anyString(), anyString(), any(Recharge.class));
+    }
+
+    @Test
+    void testRecordCancelledRecharge_NullOperatorAndPlan() {
+        when(operatorClient.getOperatorById(10L)).thenReturn(null);
+        when(operatorClient.getPlanById(100L)).thenReturn(null);
+        when(userClient.getUserById(1L)).thenReturn(null);
+        when(rechargeRepository.save(any(Recharge.class))).thenReturn(dummyRecharge);
+        when(modelMapper.map(any(), eq(RechargeResponse.class))).thenReturn(new RechargeResponse());
+
+        request.setPaymentMode("CANCELLED");
+        RechargeResponse result = rechargeService.recordCancelledRecharge(request);
+
+        assertNotNull(result);
+    }
+
+    // --- updatePaymentStatus Tests ---
+
+    @Test
+    void testUpdatePaymentStatus_Success() {
+        dummyRecharge.setStatus(RechargeStatus.PENDING);
+        when(rechargeRepository.findById(1L)).thenReturn(Optional.of(dummyRecharge));
+        when(rechargeRepository.save(any(Recharge.class))).thenReturn(dummyRecharge);
+        when(modelMapper.map(any(), eq(RechargeResponse.class))).thenReturn(new RechargeResponse());
+
+        PaymentVerificationUpdateRequest updateReq = new PaymentVerificationUpdateRequest();
+        updateReq.setRechargeId(1L);
+        updateReq.setTransactionId("TXN-UPDATE-001");
+        updateReq.setPaymentMode("UPI");
+        updateReq.setStatus("SUCCESS");
+
+        RechargeResponse result = rechargeService.updatePaymentStatus(updateReq);
+
+        assertNotNull(result);
+        assertEquals(RechargeStatus.SUCCESS, dummyRecharge.getStatus());
+        assertEquals("TXN-UPDATE-001", dummyRecharge.getTransactionId());
+    }
+
+    @Test
+    void testUpdatePaymentStatus_Failed() {
+        dummyRecharge.setStatus(RechargeStatus.PENDING);
+        when(rechargeRepository.findById(1L)).thenReturn(Optional.of(dummyRecharge));
+        when(rechargeRepository.save(any(Recharge.class))).thenReturn(dummyRecharge);
+        when(modelMapper.map(any(), eq(RechargeResponse.class))).thenReturn(new RechargeResponse());
+
+        PaymentVerificationUpdateRequest updateReq = new PaymentVerificationUpdateRequest();
+        updateReq.setRechargeId(1L);
+        updateReq.setTransactionId("TXN-FAIL-001");
+        updateReq.setPaymentMode("CARD");
+        updateReq.setStatus("FAILED");
+
+        rechargeService.updatePaymentStatus(updateReq);
+
+        assertEquals(RechargeStatus.FAILED, dummyRecharge.getStatus());
+    }
+
+    @Test
+    void testUpdatePaymentStatus_NotFound() {
+        when(rechargeRepository.findById(99L)).thenReturn(Optional.empty());
+
+        PaymentVerificationUpdateRequest updateReq = new PaymentVerificationUpdateRequest();
+        updateReq.setRechargeId(99L);
+        updateReq.setTransactionId("TXN-X");
+        updateReq.setPaymentMode("UPI");
+        updateReq.setStatus("SUCCESS");
+
+        assertThrows(NotFoundException.class, () -> rechargeService.updatePaymentStatus(updateReq));
+    }
+
+    // --- handleOperatorCallback FAILED branch ---
+
+    @Test
+    void testHandleOperatorCallback_Failed() {
+        when(rechargeRepository.findById(1L)).thenReturn(Optional.of(dummyRecharge));
+
+        rechargeService.handleOperatorCallback(1L, "FAILED");
+
+        assertEquals(RechargeStatus.FAILED, dummyRecharge.getStatus());
     }
 }

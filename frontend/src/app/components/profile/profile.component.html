@@ -1,0 +1,96 @@
+<div class="page-wrapper">
+  <div class="section-title">My Profile 👤</div>
+  <p class="section-subtitle">Manage your account information</p>
+
+  <div class="loading-container" *ngIf="loading">
+    <div class="spinner"></div>
+  </div>
+
+  <div class="profile-layout" *ngIf="!loading && user">
+    <!-- Profile Card -->
+    <div class="card profile-card">
+      <div class="profile-avatar">
+        {{ user.name ? user.name.charAt(0).toUpperCase() : '?' }}
+      </div>
+      <h2 class="profile-name">{{ user.name }}</h2>
+      <p class="profile-email">{{ user.email }}</p>
+      <span class="badge" [ngClass]="user.role === 'ADMIN' ? 'badge-warning' : 'badge-success'">
+        {{ user.role }}
+      </span>
+      <div class="profile-meta">
+        <div class="meta-item">
+          <span class="text-muted text-sm">Member since</span>
+          <span class="font-semibold text-sm">{{ user.createdAt | istDate:'MMM yyyy' }}</span>
+        </div>
+        <div class="meta-item">
+          <span class="text-muted text-sm">Status</span>
+          <span class="badge badge-success text-sm" *ngIf="user.isActive">Active</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit Form -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Account Details</h3>
+        <button class="btn btn-outline btn-sm" *ngIf="!editing" (click)="startEdit()">✏️ Edit</button>
+        <button class="btn btn-ghost btn-sm" *ngIf="editing" (click)="cancelEdit()">Cancel</button>
+      </div>
+
+
+
+      <form [formGroup]="form" (ngSubmit)="saveProfile()">
+        <div class="form-group">
+          <label class="form-label">Full Name</label>
+          <input
+            type="text"
+            class="form-control"
+            formControlName="name"
+            [readonly]="!editing"
+            [class.readonly]="!editing"
+          />
+          <div class="form-error" *ngIf="name?.invalid && name?.touched">
+            <span *ngIf="name?.errors?.['required']">Name is required</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Email Address</label>
+          <input type="email" class="form-control readonly" [value]="user.email" readonly />
+          <p class="text-xs text-muted mt-1">Email cannot be changed</p>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Phone Number</label>
+          <input
+            type="tel"
+            class="form-control"
+            formControlName="phoneNumber"
+            [readonly]="!editing"
+            [class.readonly]="!editing"
+            maxlength="10"
+          />
+          <div class="form-error" *ngIf="phoneNumber?.invalid && phoneNumber?.touched">
+            <span *ngIf="phoneNumber?.errors?.['pattern']">Enter a valid 10-digit mobile number</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Role</label>
+          <input type="text" class="form-control readonly" [value]="user.role" readonly />
+        </div>
+
+        <button
+          type="submit"
+          class="btn btn-primary"
+          *ngIf="editing"
+          [disabled]="saving"
+        >
+          <span class="spinner spinner-sm" *ngIf="saving"></span>
+          <span *ngIf="!saving">Save Changes</span>
+          <span *ngIf="saving">Saving...</span>
+        </button>
+      </form>
+    </div>
+  </div>
+</div>

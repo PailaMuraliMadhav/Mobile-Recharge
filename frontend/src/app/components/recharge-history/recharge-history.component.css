@@ -1,0 +1,17 @@
+.filters-bar {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.filter-group {
+  flex: 1;
+  min-width: 200px;
+}
+
+@media (max-width: 480px) {
+  .filter-group {
+    min-width: 100%;
+  }
+}

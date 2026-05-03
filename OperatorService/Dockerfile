@@ -1,8 +1,5 @@
-FROM eclipse-temurin:21-jdk
+FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
-
-# Use a wildcard (*) so it finds the Eureka JAR regardless of the exact version name
 COPY target/*.jar app.jar
-
 EXPOSE 8082
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]

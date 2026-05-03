@@ -1,0 +1,176 @@
+<div class="dashboard" *ngIf="!loading">
+
+  <!-- ── Welcome Row ── -->
+  <div class="welcome-row">
+    <div class="welcome-left">
+      <p class="welcome-time">{{ getTimeGreeting() }},</p>
+      <h1 class="welcome-name">{{ firstName }} <span class="wave">👋</span></h1>
+      <p class="welcome-sub">Here's your account overview for today.</p>
+    </div>
+    <a routerLink="/recharge" class="recharge-fab">
+      <span>⚡</span> Recharge Now
+    </a>
+  </div>
+
+  <!-- ── Stats Cards ── -->
+  <div class="stats-grid">
+    <div class="stat-card primary-card">
+      <div class="stat-card-top">
+        <span class="stat-card-label">Total Spent</span>
+        <span class="stat-card-icon">💳</span>
+      </div>
+      <div class="stat-card-value">₹{{ totalSpent | number:'1.0-0' }}</div>
+      <div class="stat-card-sub">Across {{ totalRecharges }} recharges</div>
+      <div class="stat-card-glow"></div>
+    </div>
+    <div class="stat-card dark-card" *ngIf="authService.isAdmin">
+      <div class="stat-card-top">
+        <span class="stat-card-label">Successful</span>
+        <span class="stat-card-icon">✅</span>
+      </div>
+      <div class="stat-card-value">{{ successCount }}</div>
+      <div class="stat-card-sub">
+        <span class="success-rate">
+          {{ totalRecharges > 0 ? ((successCount / totalRecharges) * 100 | number:'1.0-0') : 0 }}% success rate
+        </span>
+      </div>
+    </div>
+    <div class="stat-card dark-card">
+      <div class="stat-card-top">
+        <span class="stat-card-label">My Number</span>
+        <span class="stat-card-icon">📱</span>
+      </div>
+      <div class="stat-card-value phone-val">{{ user?.phoneNumber || '—' }}</div>
+      <div class="stat-card-sub">Primary mobile</div>
+    </div>
+  </div>
+
+  <!-- ── Quick Recharge Banner ── -->
+  <div class="quick-banner" *ngIf="totalRecharges === 0">
+    <div class="quick-banner-text">
+      <h3>Make your first recharge! 🚀</h3>
+      <p>Choose from 50+ operators and hundreds of plans</p>
+    </div>
+    <a routerLink="/recharge" class="btn btn-primary">Start Now →</a>
+  </div>
+
+  <!-- ── Services ── -->
+  <div class="services-section">
+    <h2 class="section-title">Quick Access</h2>
+    <div class="services-grid">
+      <a routerLink="/operators" class="service-tile">
+        <div class="tile-icon plans-icon">📋</div>
+        <span class="tile-label">Plans</span>
+        <span class="tile-desc">Browse offers</span>
+      </a>
+      <a routerLink="/recharge-history" class="service-tile">
+        <div class="tile-icon history-icon">🕐</div>
+        <span class="tile-label">History</span>
+        <span class="tile-desc">Past transactions</span>
+      </a>
+      <a routerLink="/profile" class="service-tile">
+        <div class="tile-icon profile-icon">👤</div>
+        <span class="tile-label">Profile</span>
+        <span class="tile-desc">Account settings</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- ── Activity Summary ── -->
+  <div class="activity-row" *ngIf="totalRecharges > 0">
+    <div class="activity-card" *ngIf="authService.isAdmin">
+      <div class="activity-header">
+        <span class="activity-icon">📊</span>
+        <span class="activity-title">Activity</span>
+      </div>
+      <div class="activity-bars">
+        <div class="activity-bar-row">
+          <span class="bar-label">Success</span>
+          <div class="bar-track">
+            <div class="bar-fill success-bar"
+              [style.width]="(totalRecharges > 0 ? (successCount / totalRecharges) * 100 : 0) + '%'">
+            </div>
+          </div>
+          <span class="bar-val">{{ successCount }}</span>
+        </div>
+        <div class="activity-bar-row">
+          <span class="bar-label">Failed</span>
+          <div class="bar-track">
+            <div class="bar-fill failed-bar"
+              [style.width]="(totalRecharges > 0 ? ((totalRecharges - successCount) / totalRecharges) * 100 : 0) + '%'">
+            </div>
+          </div>
+          <span class="bar-val">{{ totalRecharges - successCount }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="activity-card">
+      <div class="activity-header">
+        <span class="activity-icon">💡</span>
+        <span class="activity-title">Tips</span>
+      </div>
+      <div class="tips-list">
+        <div class="tip-item">
+          <span class="tip-dot"></span>
+          <span>Compare plans before recharging to save more</span>
+        </div>
+        <div class="tip-item">
+          <span class="tip-dot"></span>
+          <span>Check validity before choosing a plan</span>
+        </div>
+        <div class="tip-item">
+          <span class="tip-dot"></span>
+          <span>UPI payments are instant and secure</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Recent Transactions ── -->
+  <div class="transactions-section">
+    <div class="tx-header">
+      <h2 class="section-title">Recent Transactions</h2>
+      <a routerLink="/recharge-history" class="see-all">See all →</a>
+    </div>
+
+    <div class="tx-empty" *ngIf="recentRecharges.length === 0">
+      <div class="tx-empty-icon">🔍</div>
+      <p class="tx-empty-title">No transactions yet</p>
+      <p class="tx-empty-sub">Your recharge history will show up here</p>
+      <a routerLink="/recharge" class="btn btn-primary btn-sm" style="margin-top:1rem">Start Recharging</a>
+    </div>
+
+    <div class="tx-list" *ngIf="recentRecharges.length > 0">
+      <div class="tx-row" *ngFor="let r of recentRecharges; let i = index"
+           [style.animation-delay]="(i * 0.06) + 's'">
+        <div class="tx-avatar" [ngClass]="'tx-' + r.status.toLowerCase()">
+          {{ r.status === 'SUCCESS' ? '✓' : r.status === 'FAILED' ? '✕' : '…' }}
+        </div>
+        <div class="tx-body">
+          <div class="tx-title">{{ r.mobileNumber }}</div>
+          <div class="tx-detail">{{ r.paymentMode === 'CANCELLED' ? 'Cancelled' : r.paymentMode }} · {{ r.createdAt | istDate:'dd MMM, hh:mm a' }}</div>
+        </div>
+        <div class="tx-end">
+          <div class="tx-amount" [class.tx-amount-fail]="r.status === 'FAILED'">
+            {{ r.status === 'FAILED' ? '' : '−' }}₹{{ r.amount }}
+          </div>
+          <div class="tx-status-dot" [ngClass]="'dot-' + r.status.toLowerCase()"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Skeleton -->
+<div class="skeleton-wrap" *ngIf="loading">
+  <div class="sk sk-welcome"></div>
+  <div class="sk-grid">
+    <div class="sk sk-card" *ngFor="let i of [1,2,3]"></div>
+  </div>
+  <div class="sk sk-section"></div>
+  <div class="sk-txlist">
+    <div class="sk sk-tx" *ngFor="let i of [1,2,3,4,5]"></div>
+  </div>
+</div>

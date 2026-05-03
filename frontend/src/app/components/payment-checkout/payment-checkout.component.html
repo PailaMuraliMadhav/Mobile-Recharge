@@ -1,0 +1,190 @@
+<div class="checkout-page">
+  <div class="checkout-container">
+
+    <!-- Left: Payment Form -->
+    <div class="checkout-left">
+      <div class="checkout-header">
+        <button class="back-btn" (click)="router.navigate(['/recharge'])">← Back</button>
+        <h2 class="checkout-title">Payment Checkout</h2>
+      </div>
+
+      <!-- Mobile & Amount Banner -->
+      <div class="amount-banner">
+        <div class="amount-info">
+          <span class="amount-label">Mobile Recharge for</span>
+          <span class="amount-mobile">+91 {{ mobileNumber }}</span>
+        </div>
+        <div class="amount-value">- ₹{{ plan?.price }}</div>
+      </div>
+
+      <!-- Error / Cancel message -->
+      <div class="alert alert-danger mt-2" *ngIf="error">{{ error }}</div>
+
+      <!-- Payment Method Card -->
+      <div class="card payment-card">
+        <!-- Tab Navigation -->
+        <div class="pay-tabs">
+          <button class="pay-tab" [class.active]="activeTab === 'upi'" (click)="setTab('upi')">UPI</button>
+          <button class="pay-tab" [class.active]="activeTab === 'card'" (click)="setTab('card')">Card</button>
+          <button class="pay-tab" [class.active]="activeTab === 'netbanking'" (click)="setTab('netbanking')">Net Banking</button>
+        </div>
+
+        <!-- UPI Tab -->
+        <div class="pay-tab-content" *ngIf="activeTab === 'upi'">
+          <div class="upi-apps-grid">
+            <button *ngFor="let app of upiApps" class="upi-app-btn"
+              [class.selected]="selectedUpiApp === app.id" (click)="selectUpiApp(app.id)">
+              <span class="upi-app-icon">{{ app.icon }}</span>
+              <span class="upi-app-name">{{ app.name }}</span>
+            </button>
+          </div>
+          <div class="upi-divider"><span>or</span></div>
+          <button class="btn btn-outline btn-sm" (click)="enableUpiInput()" *ngIf="!upiInputMode">Enter UPI ID manually</button>
+          <form [formGroup]="upiForm" *ngIf="upiInputMode" class="upi-manual-form">
+            <div class="form-group">
+              <label>UPI ID</label>
+              <input type="text" formControlName="upiId" placeholder="yourname@upi" class="form-control" />
+              <div class="field-error" *ngIf="upiId?.touched && upiId?.invalid">Enter a valid UPI ID</div>
+            </div>
+          </form>
+        </div>
+
+        <!-- Card Tab -->
+        <div class="pay-tab-content" *ngIf="activeTab === 'card'">
+          <form [formGroup]="cardForm">
+            <div class="form-group">
+              <label>Card Number</label>
+              <input type="text" formControlName="cardNumber" placeholder="1234 5678 9012 3456"
+                class="form-control" maxlength="19" (input)="formatCard($event)" />
+              <div class="field-error" *ngIf="cardNumber?.touched && cardNumber?.invalid">Enter a valid 16-digit card number</div>
+            </div>
+            <div class="form-group">
+              <label>Card Holder</label>
+              <input type="text" formControlName="cardHolder" placeholder="Name on card" class="form-control" />
+              <div class="field-error" *ngIf="cardHolder?.touched && cardHolder?.invalid">Card holder name is required</div>
+            </div>
+            <div class="form-row">
+              <div class="form-group half">
+                <label>Expiry</label>
+                <input type="text" formControlName="expiry" placeholder="MM/YY"
+                  class="form-control" maxlength="5" (input)="formatExpiry($event)" />
+                <div class="field-error" *ngIf="expiry?.touched && expiry?.invalid">Invalid expiry</div>
+              </div>
+              <div class="form-group half">
+                <label>CVV</label>
+                <input type="password" formControlName="cvv" placeholder="•••"
+                  class="form-control" maxlength="4" />
+                <div class="field-error" *ngIf="cvv?.touched && cvv?.invalid">Invalid CVV</div>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <!-- Netbanking Tab -->
+        <div class="pay-tab-content" *ngIf="activeTab === 'netbanking'">
+          <div class="bank-list">
+            <button *ngFor="let bank of banks" class="bank-btn"
+              [class.selected]="selectedBank === bank.id" (click)="selectedBank = bank.id">
+              <span class="bank-icon">{{ bank.icon }}</span>
+              <span>{{ bank.name }}</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Security badges -->
+        <div class="security-badges">
+          <span class="badge-item">🔒 PCI-DSS Compliant</span>
+          <span class="badge-item">🛡️ Secure SSL Encryption</span>
+        </div>
+
+        <!-- Pay Button -->
+        <button class="btn btn-primary btn-block btn-lg pay-btn"
+          [disabled]="!canPay() || loading" (click)="onPayClick()">
+          <span class="spinner spinner-sm" *ngIf="loading"></span>
+          <span *ngIf="!loading">Pay ₹{{ plan?.price }}</span>
+          <span *ngIf="loading">Processing...</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Right: Order Summary -->
+    <div class="checkout-right">
+      <div class="card order-summary">
+        <h3 class="card-title">Order Summary</h3>
+        <div class="summary-row"><span class="text-muted">Mobile</span><span class="font-semibold">{{ mobileNumber }}</span></div>
+        <div class="summary-row"><span class="text-muted">Plan</span><span class="font-semibold">{{ plan?.name }}</span></div>
+        <div class="summary-row"><span class="text-muted">Data</span><span>{{ plan?.data }}</span></div>
+        <div class="summary-row"><span class="text-muted">Validity</span><span>{{ plan?.validityDays }} days</span></div>
+        <div class="summary-row" *ngIf="plan?.description">
+          <span class="text-muted">Benefits</span><span class="text-sm">{{ plan?.description }}</span>
+        </div>
+        <div class="divider"></div>
+        <div class="summary-total">
+          <span class="font-bold">Total Amount</span>
+          <span class="total-price">₹{{ plan?.price }}</span>
+        </div>
+        <div class="summary-note">✅ Instant activation after payment</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Confirmation Modal -->
+  <div class="modal-overlay" *ngIf="showConfirm">
+    <div class="modal-box">
+      <h3>Confirm Payment</h3>
+      <p>You are about to pay <strong>₹{{ plan?.price }}</strong> for {{ plan?.name }}.</p>
+      <p class="text-muted">Mobile: {{ mobileNumber }}</p>
+      <div class="modal-actions">
+        <button class="btn btn-outline" (click)="cancelPay()">Cancel</button>
+        <button class="btn btn-primary" (click)="confirmPay()">
+          <span class="spinner spinner-sm" *ngIf="loading"></span>
+          Confirm & Pay
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Success Modal -->
+  <div class="modal-overlay" *ngIf="paymentSuccess">
+    <div class="modal-box success-card">
+      <div class="success-header">
+        <div class="check-circle">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        </div>
+        <h2 class="success-title">Recharge Successful!</h2>
+        <p class="success-subtitle">We've processed your payment for +91 {{ mobileNumber }}</p>
+      </div>
+      
+      <div class="success-body">
+        <div class="receipt-row">
+          <span class="receipt-label">Amount Paid</span>
+          <span class="receipt-value">₹{{ successDetails?.amount }}</span>
+        </div>
+        <div class="receipt-row">
+          <span class="receipt-label">Plan Details</span>
+          <span class="receipt-value">{{ successDetails?.planName }}</span>
+        </div>
+        <div class="receipt-divider"></div>
+        <div class="receipt-footer">
+          <span class="receipt-label">Transaction ID</span>
+          <code class="receipt-id">{{ successDetails?.transactionId }}</code>
+        </div>
+      </div>
+
+      <div class="mail-alert">
+        <span class="mail-icon">✉️</span>
+        <span>A confirmation receipt has been sent to your email.</span>
+      </div>
+
+      <div class="modal-actions horizontal">
+        <button class="btn btn-outline" (click)="router.navigate(['/recharge'])">
+          New Recharge
+        </button>
+        <button class="btn btn-primary" (click)="router.navigate(['/history'])">
+          View History
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

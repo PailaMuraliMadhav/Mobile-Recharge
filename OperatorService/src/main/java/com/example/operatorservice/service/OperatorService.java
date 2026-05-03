@@ -17,6 +17,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+/*
+ * AUTHOR: Paila Murali Madhav
+ * CLASS: OperatorService
+ * DESCRIPTION:
+ *   Business logic layer for managing telecom operators and their recharge plans.
+ *   Supports CRUD operations for operators and plans, including soft-delete functionality.
+ */
 @Service
 @RequiredArgsConstructor
 public class OperatorService {
@@ -25,7 +32,11 @@ public class OperatorService {
     private final PlanRepository planRepository;
     private final ModelMapper modelMapper;
 
-    // Get all operators
+    /* ================================================================
+     * METHOD: getAllOperators
+     * DESCRIPTION:
+     *   Returns a list of all currently active operators.
+     * ================================================================ */
     public List<OperatorResponse> getAllOperators() {
 
         return operatorRepository.findByIsActiveTrue()
@@ -34,7 +45,11 @@ public class OperatorService {
                 .toList();
     }
 
-    // Get operator by id
+    /* ================================================================
+     * METHOD: getOperatorById
+     * DESCRIPTION:
+     *   Retrieves a single operator by its ID. Throws NotFoundException if not found.
+     * ================================================================ */
     public OperatorResponse getOperatorById(Long id) {
 
         Operator operator = operatorRepository.findById(id)
@@ -44,7 +59,12 @@ public class OperatorService {
         return modelMapper.map(operator, OperatorResponse.class);
     }
 
-    // Add operator
+    /* ================================================================
+     * METHOD: addOperator
+     * DESCRIPTION:
+     *   Creates a new operator after verifying no duplicate name exists.
+     *   Sets the operator as active and normalises the code to uppercase.
+     * ================================================================ */
     @Transactional
     public OperatorResponse addOperator(OperatorRequest request) {
 
@@ -60,20 +80,35 @@ public class OperatorService {
         return modelMapper.map(operatorRepository.save(operator), OperatorResponse.class);
     }
 
-    // Update operator
+    /* ================================================================
+     * METHOD: updateOperator
+     * DESCRIPTION:
+     *   Updates the details of an existing operator identified by its ID.
+     *   Throws NotFoundException if the operator does not exist.
+     * ================================================================ */
     @Transactional
     public OperatorResponse updateOperator(Long id, OperatorRequest request) {
 
         Operator operator = operatorRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Operator not found"));
 
-        modelMapper.map(request, operator);
+        operator.setName(request.getName());
+        operator.setCode(request.getCode().toUpperCase());
+        operator.setDescription(request.getDescription());
+        if (request.getLogoUrl() != null) {
+            operator.setLogoUrl(request.getLogoUrl().isBlank() ? null : request.getLogoUrl());
+        }
         operator.setIsActive(true);
 
         return modelMapper.map(operatorRepository.save(operator), OperatorResponse.class);
     }
 
-    // Soft delete operator
+    /* ================================================================
+     * METHOD: deleteOperator
+     * DESCRIPTION:
+     *   Soft-deletes an operator by setting its active flag to false,
+     *   preserving the record in the database.
+     * ================================================================ */
     @Transactional
     public String deleteOperator(Long id) {
 
@@ -87,7 +122,12 @@ public class OperatorService {
         return "Operator deleted successfully";
     }
 
-    // Get plans by operator
+    /* ================================================================
+     * METHOD: getPlansByOperator
+     * DESCRIPTION:
+     *   Returns all active recharge plans associated with the given operator ID.
+     *   Throws NotFoundException if the operator does not exist.
+     * ================================================================ */
     public List<PlanResponse> getPlansByOperator(Long operatorId) {
 
         if (!operatorRepository.existsById(operatorId)) {
@@ -101,7 +141,12 @@ public class OperatorService {
                 .toList();
     }
 
-    // Add plan
+    /* ================================================================
+     * METHOD: addPlan
+     * DESCRIPTION:
+     *   Adds a new recharge plan to the specified operator after checking for
+     *   duplicate plan names within the same operator.
+     * ================================================================ */
     @Transactional
     public PlanResponse addPlan(Long operatorId, PlanRequest request) {
 
@@ -123,7 +168,12 @@ public class OperatorService {
         return modelMapper.map(planRepository.save(plan), PlanResponse.class);
     }
 
-    // Update plan
+    /* ================================================================
+     * METHOD: updatePlan
+     * DESCRIPTION:
+     *   Updates the details of an existing recharge plan identified by its plan ID.
+     *   Throws NotFoundException if the plan does not exist.
+     * ================================================================ */
     @Transactional
     public PlanResponse updatePlan(Long planId, PlanRequest request) {
 
@@ -137,7 +187,12 @@ public class OperatorService {
         return modelMapper.map(planRepository.save(plan), PlanResponse.class);
     }
 
-    // Soft delete plan
+    /* ================================================================
+     * METHOD: deletePlan
+     * DESCRIPTION:
+     *   Soft-deletes a recharge plan by setting its active flag to false,
+     *   preserving the record in the database.
+     * ================================================================ */
     @Transactional
     public String deletePlan(Long planId) {
 
@@ -150,6 +205,12 @@ public class OperatorService {
 
         return "Plan deleted successfully";
     }
+
+    /* ================================================================
+     * METHOD: getPlanById
+     * DESCRIPTION:
+     *   Retrieves a single recharge plan by its ID. Throws NotFoundException if not found.
+     * ================================================================ */
     public PlanResponse getPlanById(Long planId) {
 
         Plan plan = planRepository.findById(planId)

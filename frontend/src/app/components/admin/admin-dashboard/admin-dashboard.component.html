@@ -1,0 +1,148 @@
+<div class="page-wrapper">
+  <div class="section-title">Admin Dashboard ⚙️</div>
+  <p class="section-subtitle">Platform overview and management</p>
+
+  <div class="loading-container" *ngIf="loading">
+    <div class="spinner"></div>
+  </div>
+
+  <ng-container *ngIf="!loading">
+    <!-- Stats -->
+    <div class="grid-4 mb-4">
+      <div class="stat-card">
+        <div class="stat-icon">👥</div>
+        <div class="stat-info">
+          <div class="stat-value">{{ totalUsers }}</div>
+          <div class="stat-label">Total Users</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">📱</div>
+        <div class="stat-info">
+          <div class="stat-value">{{ totalRecharges }}</div>
+          <div class="stat-label">Total Recharges</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🌐</div>
+        <div class="stat-info">
+          <div class="stat-value">{{ totalOperators }}</div>
+          <div class="stat-label">Operators</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">💰</div>
+        <div class="stat-info">
+          <div class="stat-value">₹{{ totalRevenue | number:'1.0-0' }}</div>
+          <div class="stat-label">Total Revenue</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Admin Quick Links -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <h2 class="card-title">Management</h2>
+      </div>
+      <div class="admin-links">
+        <a routerLink="/admin/users" class="admin-link-card">
+          <span class="admin-link-icon">👥</span>
+          <div>
+            <div class="font-semibold">Manage Users</div>
+            <div class="text-sm text-muted">View and manage all users</div>
+          </div>
+        </a>
+        <a routerLink="/admin/operators" class="admin-link-card">
+          <span class="admin-link-icon">🌐</span>
+          <div>
+            <div class="font-semibold">Manage Operators</div>
+            <div class="text-sm text-muted">Add, edit, delete operators and plans</div>
+          </div>
+        </a>
+      </div>
+    </div>
+
+    <!-- Recent Transactions -->
+    <div class="dashboard-card recent-activity">
+      <div class="card-header">
+        <h3 class="card-title">Recent Transactions</h3>
+        <a routerLink="/recharge-history" class="view-all">View All</a>
+      </div>
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Mobile</th>
+              <th>Operator</th>
+              <th>Amount</th>
+              <th>Status</th>
+              <th>Time</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let r of recentRecharges">
+              <td>{{ r.mobileNumber }}</td>
+              <td>{{ r.operatorName }}</td>
+              <td>₹{{ r.amount }}</td>
+              <td><span [class]="'badge ' + getStatusClass(r.status)">{{ r.status }}</span></td>
+              <td>{{ r.createdAt | date:'shortTime' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Analytics Section -->
+    <div class="analytics-grid" *ngIf="analytics">
+      <!-- Operator Stats -->
+      <div class="dashboard-card">
+        <h3 class="card-title">Top Operators</h3>
+        <div class="stats-list">
+          <div class="stats-item" *ngFor="let op of getTopOperators()">
+            <span class="stats-label">{{ op.name }}</span>
+            <span class="stats-value">{{ op.count }} recharges</span>
+            <div class="progress-bar">
+              <div class="progress-fill" [style.width.%]="(op.count / totalRecharges) * 100"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Payment Modes -->
+      <div class="dashboard-card">
+        <h3 class="card-title">Payment Methods</h3>
+        <div class="stats-list">
+          <div class="stats-item" *ngFor="let pm of getPaymentStats()">
+            <span class="stats-label">{{ pm.mode }}</span>
+            <span class="stats-value">{{ pm.count }}</span>
+            <div class="progress-bar">
+              <div class="progress-fill payment-fill" [style.width.%]="(pm.count / totalRecharges) * 100"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Popular Plans -->
+      <div class="dashboard-card">
+        <h3 class="card-title">Popular Plans</h3>
+        <div class="stats-list">
+          <div class="stats-item" *ngFor="let plan of getTopPlans()">
+            <span class="stats-label">{{ plan.name }}</span>
+            <span class="stats-value">{{ plan.count }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Revenue Trends -->
+      <div class="dashboard-card">
+        <h3 class="card-title">Revenue Trends (Last 7 Days)</h3>
+        <div class="stats-list">
+          <div class="stats-item" *ngFor="let trend of getRevenueTrends()">
+            <span class="stats-label">{{ trend.date | date:'MMM dd' }}</span>
+            <span class="stats-value">₹{{ trend.amount }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+</div>

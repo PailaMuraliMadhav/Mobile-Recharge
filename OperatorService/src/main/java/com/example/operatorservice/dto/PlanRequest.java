@@ -23,4 +23,6 @@ public class PlanRequest {
     private String data;
 
     private String description;
+
+    private Boolean isSuggested = false;
 }

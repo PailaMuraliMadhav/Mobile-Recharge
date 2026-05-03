@@ -1,1 +1,30 @@
+# Build folders
+target/
+dist/
+bin/
+out/
+build/
+node_modules/
+
+# IDE / Editor files
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+.DS_Store
+
+# Logs
+*.log
+hs_err_pid*
+replay_pid*
+
+# Environment
 .env
+.gemini/
+.antigravity/
+
+# Spring Boot
+.mvn/
+mvnw
+mvnw.cmd

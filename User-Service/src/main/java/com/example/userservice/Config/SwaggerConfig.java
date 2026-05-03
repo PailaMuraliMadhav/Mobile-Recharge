@@ -11,16 +11,26 @@ import org.springframework.context.annotation.Configuration;
 
 import java.util.List;
 
+/*
+ * AUTHOR: Paila Murali Madhav
+ * CLASS: SwaggerConfig
+ * DESCRIPTION:
+ *   Spring configuration class that sets up the OpenAPI (Swagger) documentation
+ *   for the User Service, including JWT bearer authentication scheme.
+ */
 @Configuration
 public class SwaggerConfig {
 
+    /* ================================================================
+     * METHOD: openAPI
+     * DESCRIPTION:
+     *   Configures the OpenAPI specification with service info, API Gateway server URL,
+     *   and JWT bearer authentication scheme.
+     * ================================================================ */
     @Bean
     public OpenAPI openAPI() {
         return new OpenAPI()
-                .servers(List.of(
-                        new Server()
-                                .description("API Gateway")
-                ))
+                .servers(List.of(new Server().description("API Gateway")))
                 .info(new Info().title("OmniCharge User Service").version("v1.0"))
                 .addSecurityItem(new SecurityRequirement().addList("bearerAuth"))
                 .components(new Components()

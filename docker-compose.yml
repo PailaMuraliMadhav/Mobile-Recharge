@@ -1,154 +1,235 @@
-services:
-  mysql:
-    image: mysql:8.0
-    container_name: mysql
-    environment:
-      MYSQL_ROOT_PASSWORD: "${MYSQL_PASSWORD}"
-    ports:
-      - "3307:3306"
-    volumes:
-      - mysql_data:/var/lib/mysql
-    networks:
-      - microservice-network
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_PASSWORD}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+# ============================================================
+# OmniRecharge - Docker Compose (8GB RAM optimised)
+# Memory budget: ~3.5GB containers + ~2.5GB Windows/Docker = ~6GB
+# Remaining headroom: ~2GB
+# ============================================================
 
+services:
+
+  # ── RabbitMQ ──────────────────────────────────────────────
   rabbitmq:
-    image: rabbitmq:3-management
+    image: rabbitmq:3-management-alpine
     container_name: rabbitmq
     ports:
       - "5672:5672"
       - "15672:15672"
+    restart: on-failure
     networks:
       - microservice-network
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
 
+  # ── Zipkin (Distributed Tracing) ──────────────────────────
+  zipkin:
+    image: openzipkin/zipkin-slim
+    container_name: zipkin
+    ports:
+      - "9411:9411"
+    restart: on-failure
+    networks:
+      - microservice-network
+    environment:
+      - "JAVA_OPTS=-Xms32m -Xmx128m"
+    deploy:
+      resources:
+        limits:
+          memory: 192M
+        reservations:
+          memory: 64M
+
+  # ── Config Server ─────────────────────────────────────────
   config-server:
     build: ./config-server
     image: mobile-recharge-config-server:latest
     container_name: config-server
-    env_file:
-      - .env
     ports:
       - "8888:8888"
-    volumes:
-      - ./config-server/config-repo:/app/config-repo
-    environment:
-      - "SPRING_PROFILES_ACTIVE=native"
-      - "SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH_LOCATIONS=file:///app/config-repo"
+    restart: on-failure
     networks:
       - microservice-network
+    environment:
+      - "EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/"
+      - "EUREKA_INSTANCE_PREFER_IP_ADDRESS=false"
+      - "EUREKA_INSTANCE_HOSTNAME=config-server"
+      - "MANAGEMENT_ZIPKIN_TRACING_ENDPOINT=http://zipkin:9411/api/v2/spans"
+      - "JAVA_OPTS=-Xms64m -Xmx192m -XX:MaxRAMPercentage=70.0 -XX:+UseSerialGC -Dspring.jmx.enabled=false"
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 96M
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8888/actuator/health || exit 1"]
+      test: ["CMD-SHELL", "nc -z localhost 8888 || exit 1"]
       interval: 10s
       timeout: 5s
-      retries: 10
-      start_period: 30s
+      retries: 15
+      start_period: 45s
 
+  # ── Eureka Server ─────────────────────────────────────────
   eureka-server:
     build: ./eureka-server
     image: mobile-recharge-eureka-server:latest
     container_name: eureka-server
     ports:
       - "8761:8761"
+    restart: on-failure
+    networks:
+      - microservice-network
     environment:
-      - "SPRING_CONFIG_IMPORT=configserver:http://config-server:8888"
+      - "EUREKA_INSTANCE_PREFER_IP_ADDRESS=false"
+      - "EUREKA_INSTANCE_HOSTNAME=eureka-server"
+      - "MANAGEMENT_ZIPKIN_TRACING_ENDPOINT=http://zipkin:9411/api/v2/spans"
+      - "JAVA_OPTS=-Xms64m -Xmx192m -XX:MaxRAMPercentage=70.0 -XX:+UseSerialGC -Dspring.jmx.enabled=false"
     depends_on:
       config-server:
         condition: service_healthy
-    networks:
-      - microservice-network
-    restart: on-failure
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 96M
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8761/actuator/health || exit 1"]
-      interval: 15s
-      timeout: 10s
-      retries: 5
-      start_period: 40s
+      test: ["CMD-SHELL", "nc -z localhost 8761 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 55s
 
+  # ── API Gateway ───────────────────────────────────────────
   api-gateway:
     build: ./api-gateway
     image: mobile-recharge-api-gateway:latest
     container_name: api-gateway
     ports:
       - "8080:8080"
+    restart: on-failure
+    networks:
+      - microservice-network
     depends_on:
       config-server:
         condition: service_healthy
       eureka-server:
         condition: service_healthy
     environment:
-      - "SPRING_CONFIG_IMPORT=configserver:http://config-server:8888"
+      - "SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888"
       - "EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/"
+      - "EUREKA_INSTANCE_PREFER_IP_ADDRESS=false"
+      - "EUREKA_INSTANCE_HOSTNAME=api-gateway"
+      - "SERVER_FORWARD_HEADERS_STRATEGY=framework"
       - "JWT_SECRET=${JWT_SECRET}"
-    networks:
-      - microservice-network
-    restart: on-failure
+      - "MANAGEMENT_ZIPKIN_TRACING_ENDPOINT=http://zipkin:9411/api/v2/spans"
+      - "SPRING_CLOUD_GATEWAY_HTTPCLIENT_RESPONSE_TIMEOUT=30000"
+      - "RESILIENCE4J_TIMELIMITER_CONFIGS_DEFAULT_TIMEOUT-DURATION=30s"
+      - "RESILIENCE4J_TIMELIMITER_INSTANCES_RECHARGECIRCUITBREAKER_TIMEOUT-DURATION=30s"
+      - "RESILIENCE4J_TIMELIMITER_INSTANCES_PAYMENTCIRCUITBREAKER_TIMEOUT-DURATION=30s"
+      - "RESILIENCE4J_TIMELIMITER_INSTANCES_OPERATORCIRCUITBREAKER_TIMEOUT-DURATION=30s"
+      - "JAVA_OPTS=-Xms64m -Xmx256m -XX:MaxRAMPercentage=70.0 -XX:+UseG1GC -Dspring.jmx.enabled=false"
+    deploy:
+      resources:
+        limits:
+          memory: 320M
+        reservations:
+          memory: 128M
 
+  # ── User Service ──────────────────────────────────────────
   user-service:
     build: ./user-service
     image: mobile-recharge-user-service:latest
     container_name: user-service
     ports:
       - "8081:8081"
+    restart: on-failure
+    networks:
+      - microservice-network
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    restart: on-failure
     depends_on:
       config-server:
         condition: service_healthy
       eureka-server:
         condition: service_healthy
     environment:
-      - "SPRING_CONFIG_IMPORT=configserver:http://config-server:8888"
+      - "SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888"
       - "EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/"
-      - "SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/omni_user?createDatabaseIfNotExist=true"
+      - "EUREKA_INSTANCE_PREFER_IP_ADDRESS=false"
+      - "EUREKA_INSTANCE_HOSTNAME=user-service"
+      - "SERVER_FORWARD_HEADERS_STRATEGY=framework"
+      - "SPRINGDOC_API_DOCS_SERVERS_0_URL=http://localhost:8080"
+      - "SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/omni_user?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true"
       - "SPRING_DATASOURCE_USERNAME=root"
-      - "SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD}"
+      - "SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}"
       - "JWT_SECRET=${JWT_SECRET}"
-    networks:
-      - microservice-network
+      - "SERVER_PORT=8081"
+      - "MANAGEMENT_ZIPKIN_TRACING_ENDPOINT=http://zipkin:9411/api/v2/spans"
+      - "JAVA_OPTS=-Xms64m -Xmx256m -XX:MaxRAMPercentage=70.0 -XX:+UseG1GC -Dspring.jmx.enabled=false"
+    deploy:
+      resources:
+        limits:
+          memory: 320M
+        reservations:
+          memory: 128M
 
+  # ── Operator Service ──────────────────────────────────────
   operator-service:
     build: ./OperatorService
     image: mobile-recharge-operator-service:latest
     container_name: operator-service
     ports:
       - "8082:8082"
+    restart: on-failure
+    networks:
+      - microservice-network
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    restart: on-failure
     depends_on:
       config-server:
         condition: service_healthy
       eureka-server:
         condition: service_healthy
     environment:
-      - "SPRING_CONFIG_IMPORT=configserver:http://config-server:8888"
+      - "SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888"
       - "EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/"
-      - "SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/omni_operator?createDatabaseIfNotExist=true"
+      - "EUREKA_INSTANCE_PREFER_IP_ADDRESS=false"
+      - "EUREKA_INSTANCE_HOSTNAME=operator-service"
+      - "SERVER_FORWARD_HEADERS_STRATEGY=framework"
+      - "SPRINGDOC_API_DOCS_SERVERS_0_URL=http://localhost:8080"
+      - "SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/omni_operator?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true"
       - "SPRING_DATASOURCE_USERNAME=root"
-      - "SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD}"
-      - "JWT_SECRET=${JWT_SECRET}"
-    networks:
-      - microservice-network
+      - "SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}"
+      - "SERVER_PORT=8082"
+      - "MANAGEMENT_ZIPKIN_TRACING_ENDPOINT=http://zipkin:9411/api/v2/spans"
+      - "JAVA_OPTS=-Xms64m -Xmx256m -XX:MaxRAMPercentage=70.0 -XX:+UseG1GC -Dspring.jmx.enabled=false"
+    deploy:
+      resources:
+        limits:
+          memory: 320M
+        reservations:
+          memory: 128M
 
+  # ── Recharge Service ──────────────────────────────────────
   recharge-service:
     build: ./RechargeService
     image: mobile-recharge-recharge-service:latest
     container_name: recharge-service
     ports:
       - "8083:8083"
+    restart: on-failure
+    networks:
+      - microservice-network
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    restart: on-failure
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -157,24 +238,38 @@ services:
       eureka-server:
         condition: service_healthy
     environment:
-      - "SPRING_CONFIG_IMPORT=configserver:http://config-server:8888"
+      - "SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888"
       - "EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/"
-      - "SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/omni_recharge?createDatabaseIfNotExist=true"
+      - "EUREKA_INSTANCE_PREFER_IP_ADDRESS=false"
+      - "EUREKA_INSTANCE_HOSTNAME=recharge-service"
+      - "SERVER_FORWARD_HEADERS_STRATEGY=framework"
+      - "SPRINGDOC_API_DOCS_SERVERS_0_URL=http://localhost:8080"
+      - "SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/omni_recharge?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true"
       - "SPRING_DATASOURCE_USERNAME=root"
-      - "SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD}"
+      - "SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}"
       - "SPRING_RABBITMQ_HOST=rabbitmq"
-    networks:
-      - microservice-network
+      - "SERVER_PORT=8083"
+      - "MANAGEMENT_ZIPKIN_TRACING_ENDPOINT=http://zipkin:9411/api/v2/spans"
+      - "JAVA_OPTS=-Xms64m -Xmx256m -XX:MaxRAMPercentage=70.0 -XX:+UseG1GC -Dspring.jmx.enabled=false"
+    deploy:
+      resources:
+        limits:
+          memory: 320M
+        reservations:
+          memory: 128M
 
+  # ── Payment Service ───────────────────────────────────────
   payment-service:
     build: ./PaymentService
     image: mobile-recharge-payment-service:latest
     container_name: payment-service
     ports:
       - "8084:8084"
+    restart: on-failure
+    networks:
+      - microservice-network
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    restart: on-failure
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -183,15 +278,27 @@ services:
       eureka-server:
         condition: service_healthy
     environment:
-      - "SPRING_CONFIG_IMPORT=configserver:http://config-server:8888"
+      - "SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888"
       - "EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/"
-      - "SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/omni_payment?createDatabaseIfNotExist=true"
+      - "EUREKA_INSTANCE_PREFER_IP_ADDRESS=false"
+      - "EUREKA_INSTANCE_HOSTNAME=payment-service"
+      - "SERVER_FORWARD_HEADERS_STRATEGY=framework"
+      - "SPRINGDOC_API_DOCS_SERVERS_0_URL=http://localhost:8080"
+      - "SPRING_DATASOURCE_URL=jdbc:mysql://host.docker.internal:3306/omni_payment?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true"
       - "SPRING_DATASOURCE_USERNAME=root"
-      - "SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD}"
+      - "SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}"
       - "SPRING_RABBITMQ_HOST=rabbitmq"
-    networks:
-      - microservice-network
+      - "SERVER_PORT=8084"
+      - "MANAGEMENT_ZIPKIN_TRACING_ENDPOINT=http://zipkin:9411/api/v2/spans"
+      - "JAVA_OPTS=-Xms64m -Xmx256m -XX:MaxRAMPercentage=70.0 -XX:+UseG1GC -Dspring.jmx.enabled=false"
+    deploy:
+      resources:
+        limits:
+          memory: 320M
+        reservations:
+          memory: 128M
 
+  # ── Notification Service ──────────────────────────────────
   notification-service:
     build: ./NotificationService
     image: mobile-recharge-notification-service:latest
@@ -199,6 +306,8 @@ services:
     ports:
       - "8085:8085"
     restart: on-failure
+    networks:
+      - microservice-network
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -207,14 +316,42 @@ services:
       eureka-server:
         condition: service_healthy
     environment:
-      - "SPRING_CONFIG_IMPORT=configserver:http://config-server:8888"
+      - "SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888"
       - "EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/"
+      - "EUREKA_INSTANCE_PREFER_IP_ADDRESS=false"
+      - "EUREKA_INSTANCE_HOSTNAME=notification-service"
+      - "SERVER_FORWARD_HEADERS_STRATEGY=framework"
       - "SPRING_RABBITMQ_HOST=rabbitmq"
+      - "SERVER_PORT=8085"
+      - "MAIL_USERNAME=${MAIL_USERNAME}"
+      - "MAIL_PASSWORD=${MAIL_PASSWORD}"
+      - "MANAGEMENT_ZIPKIN_TRACING_ENDPOINT=http://zipkin:9411/api/v2/spans"
+      - "JAVA_OPTS=-Xms48m -Xmx192m -XX:MaxRAMPercentage=70.0 -XX:+UseSerialGC -Dspring.jmx.enabled=false"
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 80M
+
+  # ── Frontend ──────────────────────────────────────────────
+  frontend:
+    build: ./frontend
+    image: mobile-recharge-frontend:latest
+    container_name: frontend
+    ports:
+      - "4200:80"
+    restart: on-failure
     networks:
       - microservice-network
-
-volumes:
-  mysql_data:
+    depends_on:
+      - api-gateway
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+        reservations:
+          memory: 32M
 
 networks:
   microservice-network:

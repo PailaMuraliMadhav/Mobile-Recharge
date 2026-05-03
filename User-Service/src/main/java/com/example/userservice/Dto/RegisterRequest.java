@@ -1,6 +1,5 @@
 package com.example.userservice.dto;
 
-import com.example.userservice.enums.Role;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 
@@ -16,9 +15,12 @@ public class RegisterRequest {
 
     @NotBlank(message = "Password is required")
     @Size(min = 6, max = 50, message = "Password must be between 6 and 50 characters")
+    @Pattern(
+            regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).{6,50}$",
+            message = "Password must contain at least one uppercase letter, one lowercase letter, and one number"
+    )
     private String password;
-    @NotNull(message = "Role is required")
-    private Role role;
+
     @NotBlank(message = "Phone number is required")
     @Pattern(
             regexp = "^[6-9]\\d{9}$",

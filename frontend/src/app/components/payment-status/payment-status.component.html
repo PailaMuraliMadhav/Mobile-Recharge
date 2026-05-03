@@ -1,0 +1,73 @@
+<div class="page-wrapper">
+  <div class="loading-container" *ngIf="loading">
+    <div class="spinner"></div>
+    <p>Checking transaction status...</p>
+  </div>
+
+  <div class="status-page" *ngIf="!loading">
+    <div class="status-card card" *ngIf="payment">
+      <div class="status-icon" [ngClass]="getStatusClass(payment.status)">
+        {{ getStatusIcon(payment.status) }}
+      </div>
+
+      <h1 class="status-title" [ngClass]="getStatusClass(payment.status)">
+        <ng-container [ngSwitch]="payment.status">
+          <span *ngSwitchCase="'SUCCESS'">Recharge Successful!</span>
+          <span *ngSwitchCase="'FAILED'">Recharge Failed</span>
+          <span *ngSwitchDefault>Processing...</span>
+        </ng-container>
+      </h1>
+
+      <p class="status-message">{{ payment.message }}</p>
+
+      <!-- Refund notice for FAILED -->
+      <div class="refund-notice" *ngIf="payment.status === 'FAILED'">
+        💰 <strong>Refund:</strong> If any amount was deducted, it will be automatically
+        refunded within 3–5 business days. A confirmation email has been sent.
+      </div>
+
+      <!-- Email notice for SUCCESS -->
+      <div class="email-notice" *ngIf="payment.status === 'SUCCESS'">
+        📧 A confirmation email has been sent to your registered email address.
+      </div>
+
+      <div class="status-details">
+        <div class="detail-row">
+          <span class="text-muted">Transaction ID</span>
+          <span class="font-semibold text-sm">{{ payment.transactionId }}</span>
+        </div>
+        <div class="detail-row" *ngIf="payment.amount">
+          <span class="text-muted">Amount</span>
+          <span class="font-bold text-primary-color">₹{{ payment.amount }}</span>
+        </div>
+        <div class="detail-row" *ngIf="payment.paymentMode && payment.paymentMode !== '—'">
+          <span class="text-muted">Payment Mode</span>
+          <span>{{ payment.paymentMode }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="text-muted">Status</span>
+          <span class="badge"
+            [ngClass]="payment.status === 'SUCCESS' ? 'badge-success' : payment.status === 'FAILED' ? 'badge-danger' : 'badge-warning'">
+            {{ payment.status }}
+          </span>
+        </div>
+      </div>
+
+      <div class="status-actions">
+        <a routerLink="/recharge" class="btn btn-primary">New Recharge</a>
+        <a routerLink="/recharge-history" class="btn btn-outline">View History</a>
+        <a routerLink="/dashboard" class="btn btn-ghost">Dashboard</a>
+      </div>
+    </div>
+
+    <!-- Error state -->
+    <div class="card text-center" *ngIf="error">
+      <div class="empty-icon">⚠️</div>
+      <h3>{{ error }}</h3>
+      <div class="status-actions" style="justify-content:center">
+        <a routerLink="/recharge-history" class="btn btn-primary mt-2">Check History</a>
+        <a routerLink="/dashboard" class="btn btn-ghost mt-2">Dashboard</a>
+      </div>
+    </div>
+  </div>
+</div>

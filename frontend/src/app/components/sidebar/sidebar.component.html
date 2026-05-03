@@ -1,0 +1,87 @@
+<!-- Mobile backdrop -->
+<div class="sidebar-backdrop" *ngIf="mobileOpen" (click)="closeMobile()"></div>
+
+<aside class="sidebar" [class.mobile-open]="mobileOpen">
+
+  <!-- ── Brand ── -->
+  <div class="sidebar-brand">
+    <img src="assets/logo.svg" alt="OmniRecharge" class="sidebar-logo-img" />
+    <div class="brand-info">
+      <div class="brand-name">OmniRecharge</div>
+      <div class="brand-tagline">Smart Recharges</div>
+    </div>
+  </div>
+
+  <!-- ── User Card ── -->
+  <div class="sidebar-user" *ngIf="authService.isLoggedIn">
+    <div class="user-avatar-wrap">
+      <div class="user-avatar">{{ userInitial }}</div>
+      <div class="user-online-dot"></div>
+    </div>
+    <div class="user-details">
+      <div class="user-name">{{ userName }}</div>
+      <span class="user-badge" [class.admin]="authService.isAdmin">
+        {{ authService.currentUser?.role }}
+      </span>
+    </div>
+  </div>
+
+  <!-- ── Mini Analytics ── -->
+  <div class="sidebar-analytics" *ngIf="authService.isLoggedIn && totalRecharges > 0">
+    <div class="analytics-row">
+      <div class="analytics-item">
+        <div class="analytics-val">{{ totalRecharges }}</div>
+        <div class="analytics-lbl">Recharges</div>
+      </div>
+      <div class="analytics-divider"></div>
+      <div class="analytics-item">
+        <div class="analytics-val green">₹{{ totalSpent | number:'1.0-0' }}</div>
+        <div class="analytics-lbl">Spent</div>
+      </div>
+      <div class="analytics-divider"></div>
+      <div class="analytics-item">
+        <div class="analytics-val green">{{ successRate }}%</div>
+        <div class="analytics-lbl">Success</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Navigation only ── -->
+  <nav class="sidebar-nav" *ngIf="authService.isLoggedIn">
+    <ng-container *ngIf="authService.isAdmin">
+      <div class="nav-group-label">ADMIN</div>
+      <a class="sidebar-item admin"
+         *ngFor="let item of adminItems"
+         [routerLink]="item.path"
+         routerLinkActive="active">
+        <span class="item-icon">{{ item.icon }}</span>
+        <span class="item-label">{{ item.label }}</span>
+      </a>
+    </ng-container>
+
+    <div class="nav-group-label">MENU</div>
+    <a class="sidebar-item"
+       *ngFor="let item of navItems"
+       [routerLink]="item.path"
+       routerLinkActive="active">
+      <span class="item-icon">{{ item.icon }}</span>
+      <span class="item-label">{{ item.label }}</span>
+    </a>
+  </nav>
+
+</aside>
+
+<!-- Logout Confirm (triggered from topbar) -->
+<div class="modal-overlay" *ngIf="showLogoutConfirm" (click)="cancelLogout()">
+  <div class="modal" (click)="$event.stopPropagation()"
+    style="max-width:340px;text-align:center;padding:2rem">
+    <h3 style="margin-bottom:0.5rem;font-size:1.2rem">Logout?</h3>
+    <p style="color:var(--text-muted);font-size:0.875rem;margin-bottom:1.5rem">
+      Are you sure you want to log out?
+    </p>
+    <div style="display:flex;gap:0.75rem;justify-content:center">
+      <button class="btn btn-danger" (click)="confirmLogout()">Yes, Logout</button>
+      <button class="btn btn-ghost"  (click)="cancelLogout()">Cancel</button>
+    </div>
+  </div>
+</div>

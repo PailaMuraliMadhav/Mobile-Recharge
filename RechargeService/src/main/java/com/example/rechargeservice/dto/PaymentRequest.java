@@ -10,4 +10,5 @@ public class PaymentRequest {
     private Long rechargeId;
     private Long userId;
     private BigDecimal amount;
+    private String paymentMode;
 }

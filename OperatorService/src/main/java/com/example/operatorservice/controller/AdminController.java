@@ -6,9 +6,15 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+/*
+ * AUTHOR: Paila Murali Madhav
+ * CLASS: AdminController
+ * DESCRIPTION:
+ *   REST controller that exposes admin-only endpoints for managing telecom operators
+ *   and their recharge plans, including create, update, and soft-delete operations.
+ */
 @RestController
 @RequestMapping("/api/admin/operators")
 @RequiredArgsConstructor
@@ -16,60 +22,84 @@ public class AdminController {
 
     private final OperatorService operatorService;
 
-    // Add operator
+    /* ================================================================
+     * METHOD: getAllOperators (Admin)
+     * DESCRIPTION:
+     *   Returns all active operators for admin management.
+     * ================================================================ */
+    @GetMapping
+    public ResponseEntity<java.util.List<OperatorResponse>> getAllOperators() {
+        return ResponseEntity.ok(operatorService.getAllOperators());
+    }
+
+    /* ================================================================
+     * METHOD: addOperator
+     * DESCRIPTION:
+     *   Creates a new telecom operator from the provided request payload.
+     *   Returns HTTP 201 with the created operator details.
+     * ================================================================ */
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<OperatorResponse> addOperator(
             @Valid @RequestBody OperatorRequest request) {
-
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(operatorService.addOperator(request));
     }
 
-    // Update operator
+    /* ================================================================
+     * METHOD: updateOperator
+     * DESCRIPTION:
+     *   Updates the details of an existing operator identified by its ID.
+     * ================================================================ */
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<OperatorResponse> updateOperator(
             @PathVariable Long id,
             @Valid @RequestBody OperatorRequest request) {
-
         return ResponseEntity.ok(operatorService.updateOperator(id, request));
     }
 
-    // Delete operator
+    /* ================================================================
+     * METHOD: deleteOperator
+     * DESCRIPTION:
+     *   Soft-deletes an operator by its ID, marking it as inactive without removing the record.
+     * ================================================================ */
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<String> deleteOperator(@PathVariable Long id) {
-
         return ResponseEntity.ok(operatorService.deleteOperator(id));
     }
 
-    // Add plan
+    /* ================================================================
+     * METHOD: addPlan
+     * DESCRIPTION:
+     *   Adds a new recharge plan to the specified operator.
+     *   Returns HTTP 201 with the created plan details.
+     * ================================================================ */
     @PostMapping("/{operatorId}/plans")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<PlanResponse> addPlan(
             @PathVariable Long operatorId,
             @Valid @RequestBody PlanRequest request) {
-
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(operatorService.addPlan(operatorId, request));
     }
 
-    // Update plan
+    /* ================================================================
+     * METHOD: updatePlan
+     * DESCRIPTION:
+     *   Updates the details of an existing recharge plan identified by its plan ID.
+     * ================================================================ */
     @PatchMapping("/plans/{planId}")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<PlanResponse> updatePlan(
             @PathVariable Long planId,
             @Valid @RequestBody PlanRequest request) {
-
         return ResponseEntity.ok(operatorService.updatePlan(planId, request));
     }
 
-    // Delete plan
+    /* ================================================================
+     * METHOD: deletePlan
+     * DESCRIPTION:
+     *   Soft-deletes a recharge plan by its ID, marking it as inactive without removing the record.
+     * ================================================================ */
     @DeleteMapping("/plans/{planId}")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<String> deletePlan(@PathVariable Long planId) {
-
         return ResponseEntity.ok(operatorService.deletePlan(planId));
     }
 }

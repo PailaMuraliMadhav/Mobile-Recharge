@@ -1,0 +1,17 @@
+/* Main content — offset by topbar on authenticated pages */
+.main-content {
+  min-height: 100vh;
+  transition: margin-left 0.25s ease;
+}
+
+/* Authenticated pages: offset by topbar height */
+.main-content.with-sidebar {
+  margin-left: 240px;
+  padding-top: 64px;
+}
+
+@media (max-width: 900px) {
+  .main-content.with-sidebar {
+    margin-left: 0;
+  }
+}

@@ -11,6 +11,13 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/*
+ * AUTHOR: Paila Murali Madhav
+ * CLASS: UserController
+ * DESCRIPTION:
+ *   REST controller that exposes endpoints for authenticated users to manage their own
+ *   profile, view recharge history, check transaction status, and delete their account.
+ */
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
@@ -19,7 +26,11 @@ public class UserController {
 
     private  final UserService userService;
 
-    //  Own Profile
+    /* ================================================================
+     * METHOD: getProfile
+     * DESCRIPTION:
+     *   Returns the profile of the currently authenticated user extracted from the JWT token.
+     * ================================================================ */
     @GetMapping("/profile")
     public ResponseEntity<UserResponse> getProfile(
             Authentication authentication) {
@@ -28,7 +39,11 @@ public class UserController {
                 .body(userService.getProfile(authentication.getName()));
     }
 
-    // Update  Profile
+    /* ================================================================
+     * METHOD: updateProfile
+     * DESCRIPTION:
+     *   Updates the name and/or phone number of the currently authenticated user's profile.
+     * ================================================================ */
     @PatchMapping("/profile")
     public ResponseEntity<UserResponse> updateProfile(
             Authentication authentication,
@@ -38,7 +53,11 @@ public class UserController {
                 .body(userService.updateProfile(authentication.getName(), request));
     }
 
-    //  Delete Account
+    /* ================================================================
+     * METHOD: deleteMyAccount
+     * DESCRIPTION:
+     *   Permanently deletes the account of the currently authenticated user.
+     * ================================================================ */
     @DeleteMapping("/profile")
     public ResponseEntity<String> deleteMyAccount(
             Authentication authentication) {
@@ -47,7 +66,12 @@ public class UserController {
                 .body(userService.deleteMyAccount(authentication.getName()));
     }
 
-    // Recharge History
+    /* ================================================================
+     * METHOD: getRechargeHistory
+     * DESCRIPTION:
+     *   Fetches the recharge history for the authenticated user via a Feign call
+     *   to the Recharge Service.
+     * ================================================================ */
     @GetMapping("/recharge-history")
     public ResponseEntity<List<?>> getRechargeHistory(
             Authentication authentication) {
@@ -56,12 +80,28 @@ public class UserController {
                 .body(userService.getRechargeHistoryByEmail(authentication.getName()));
     }
 
-    // Transaction Status
+    /* ================================================================
+     * METHOD: getTransactionStatus
+     * DESCRIPTION:
+     *   Retrieves the payment transaction status for the given transaction ID
+     *   via a Feign call to the Payment Service.
+     * ================================================================ */
     @GetMapping("/transaction/{transactionId}")
     public ResponseEntity<Object> getTransactionStatus(
             @PathVariable String transactionId) {
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(userService.getTransactionStatus(transactionId));
+    }
+
+    /* ================================================================
+     * METHOD: getInternalUserById
+     * DESCRIPTION:
+     *   Internal endpoint used by other microservices to retrieve user details by ID
+     *   without going through the public API.
+     * ================================================================ */
+    @GetMapping("/internal/{id}")
+    public ResponseEntity<UserResponse> getInternalUserById(@PathVariable Long id) {
+        return ResponseEntity.ok(userService.getUserById(id));
     }
 }

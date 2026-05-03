@@ -15,6 +15,8 @@ public class PaymentResponse {
 
     private RechargeStatus status;
 
+    private String paymentMode;
+
     private BigDecimal amount;
 
 }

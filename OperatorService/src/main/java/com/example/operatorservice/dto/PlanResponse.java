@@ -21,6 +21,7 @@ public class PlanResponse {
     private String data;
     private String description;
     private Boolean isActive;
+    private Boolean isSuggested;
     private Long operatorId;
     private String operatorName;
     private LocalDateTime createdAt;

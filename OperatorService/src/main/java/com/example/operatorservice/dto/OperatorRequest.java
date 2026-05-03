@@ -15,4 +15,5 @@ public class OperatorRequest {
     private String code;
 
     private String description;
+    private String logoUrl;
 }

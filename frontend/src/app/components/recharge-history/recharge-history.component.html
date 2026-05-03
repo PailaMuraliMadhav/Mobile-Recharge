@@ -1,0 +1,74 @@
+<div class="page-wrapper">
+  <div class="section-title">Recharge History 🕐</div>
+  <p class="section-subtitle">All your past recharge transactions</p>
+
+  <div class="loading-container" *ngIf="loading">
+    <div class="spinner"></div>
+    <p>Loading history...</p>
+  </div>
+
+  <ng-container *ngIf="!loading">
+    <!-- Filters -->
+    <div class="filters-bar card mb-3">
+      <div class="filter-group">
+        <input
+          type="text"
+          class="form-control"
+          placeholder="🔍 Search by mobile or transaction ID..."
+          [(ngModel)]="searchTerm"
+          (input)="applyFilter()"
+        />
+      </div>
+      <div class="filter-group">
+        <select class="form-control" [(ngModel)]="filterStatus" (change)="applyFilter()">
+          <option value="">All Status</option>
+          <option value="SUCCESS">Success</option>
+          <option value="PENDING">Pending</option>
+          <option value="FAILED">Failed</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div class="empty-state card" *ngIf="filteredRecharges.length === 0">
+      <div class="empty-icon">📭</div>
+      <h3>No recharges found</h3>
+      <p *ngIf="recharges.length === 0">You haven't made any recharges yet</p>
+      <p *ngIf="recharges.length > 0">No results match your filter</p>
+      <a routerLink="/recharge" class="btn btn-primary mt-2" *ngIf="recharges.length === 0">Make First Recharge</a>
+    </div>
+
+    <!-- Table -->
+    <div class="card" *ngIf="filteredRecharges.length > 0">
+      <div class="card-header">
+        <span class="card-title">{{ filteredRecharges.length }} Transaction(s)</span>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Mobile</th>
+              <th>Amount</th>
+              <th>Status</th>
+              <th>Payment Mode</th>
+              <th>Transaction ID</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let r of filteredRecharges; let i = index">
+              <td class="text-muted text-sm">{{ i + 1 }}</td>
+              <td class="font-semibold">{{ r.mobileNumber }}</td>
+              <td class="text-primary-color font-bold">₹{{ r.amount }}</td>
+              <td><span class="badge" [ngClass]="getStatusClass(r.status)">{{ r.status }}</span></td>
+              <td>{{ r.paymentMode === 'CANCELLED' ? 'Cancelled' : r.paymentMode }}</td>
+              <td class="text-sm text-muted">{{ r.transactionId || '—' }}</td>
+              <td class="text-sm text-muted">{{ r.createdAt | istDate:'dd MMM yyyy, hh:mm a' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </ng-container>
+</div>

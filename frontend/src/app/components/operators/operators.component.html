@@ -1,0 +1,75 @@
+<div class="page-wrapper">
+  <div class="section-title">Browse Plans 📋</div>
+  <p class="section-subtitle">Compare plans from all operators and choose the best one</p>
+
+  <div class="loading-container" *ngIf="loading">
+    <div class="spinner"></div>
+    <p>Loading operators...</p>
+  </div>
+
+  <div class="operators-layout" *ngIf="!loading">
+    <!-- Operator Tabs -->
+    <div class="operator-tabs">
+      <button
+        class="operator-tab"
+        *ngFor="let op of operators"
+        [class.active]="selectedOperator?.id === op.id"
+        (click)="selectOperator(op)"
+      >
+        <div class="op-tab-logo" *ngIf="op.logoUrl">
+          <img [src]="op.logoUrl" [alt]="op.name" class="op-tab-logo-img"
+               (error)="$any($event.target).style.display='none'">
+        </div>
+        <div class="op-tab-initial" *ngIf="!op.logoUrl">{{ op.code[0] }}</div>
+        <span class="op-name">{{ op.name }}</span>
+      </button>
+    </div>
+
+    <!-- Plans -->
+    <div class="plans-section">
+      <div class="plans-header" *ngIf="selectedOperator">
+        <div class="plans-header-left">
+          <div class="op-header-logo" *ngIf="selectedOperator.logoUrl">
+            <img [src]="selectedOperator.logoUrl" [alt]="selectedOperator.name" class="op-header-logo-img"
+                 (error)="$any($event.target).style.display='none'">
+          </div>
+          <div class="op-header-initial" *ngIf="!selectedOperator.logoUrl">{{ selectedOperator.code[0] }}</div>
+          <div>
+            <h2>{{ selectedOperator.name }} Plans</h2>
+            <p class="text-muted text-sm" *ngIf="selectedOperator.description">{{ selectedOperator.description }}</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="loading-container" *ngIf="loadingPlans">
+        <div class="spinner"></div>
+        <p>Loading plans...</p>
+      </div>
+
+      <div class="empty-state" *ngIf="!loadingPlans && plans.length === 0">
+        <div class="empty-icon">📭</div>
+        <h3>No plans available</h3>
+        <p>No active plans for this operator</p>
+      </div>
+
+      <div class="plans-grid-full" *ngIf="!loadingPlans && plans.length > 0">
+        <div class="plan-card-full" *ngFor="let plan of plans">
+          <div class="plan-card-left">
+            <div class="plan-price-big">₹{{ plan.price }}</div>
+            <div class="plan-validity">{{ plan.validityDays }} days</div>
+          </div>
+          <div class="plan-card-center">
+            <div class="plan-name-big">{{ plan.name }}</div>
+            <div class="plan-data-badge">📶 {{ plan.data }}</div>
+            <div class="plan-desc-text text-sm text-muted" *ngIf="plan.description">{{ plan.description }}</div>
+          </div>
+          <div class="plan-card-right">
+            <button class="btn btn-primary btn-sm" (click)="rechargeWithPlan(plan)">
+              Recharge →
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

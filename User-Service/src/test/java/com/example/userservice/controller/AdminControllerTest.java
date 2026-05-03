@@ -14,8 +14,7 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(AdminController.class)
@@ -48,20 +47,18 @@ class AdminControllerTest {
     }
 
     @Test
-    void testDeleteUserEndpoint() throws Exception {
-        when(userService.deleteUser(anyLong())).thenReturn("User deleted successfully");
+    void testBlockUserEndpoint() throws Exception {
+        when(userService.blockUser(anyLong())).thenReturn("User blocked successfully");
 
-        mockMvc.perform(delete("/api/admin/users/1"))
+        mockMvc.perform(patch("/api/admin/users/1/block"))
                 .andExpect(status().isOk());
     }
 
     @Test
-    void testPermanentDeleteUserEndpoint() throws Exception {
-        when(userService.permanentDeleteUser(anyLong()))
-                .thenReturn("User with id 1 has been permanently deleted");
+    void testUnblockUserEndpoint() throws Exception {
+        when(userService.unblockUser(anyLong())).thenReturn("User unblocked successfully");
 
-        // URL matches AdminController: DELETE /api/admin/users/{id}/permanent
-        mockMvc.perform(delete("/api/admin/users/1/permanent"))
+        mockMvc.perform(patch("/api/admin/users/1/unblock"))
                 .andExpect(status().isOk());
     }
 }

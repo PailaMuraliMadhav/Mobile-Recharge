@@ -1,0 +1,105 @@
+<div class="page-wrapper">
+  <div class="section-title">Mobile Recharge ⚡</div>
+  <p class="section-subtitle">Select your operator and plan to get started</p>
+
+  <div class="recharge-layout">
+    <div class="recharge-form-card card">
+      <!-- Recharge Type Toggle -->
+      <div class="recharge-type-toggle">
+        <button type="button" class="toggle-btn" [class.active]="rechargeType === 'self'" (click)="setRechargeType('self')">
+          👤 For Self
+        </button>
+        <button type="button" class="toggle-btn" [class.active]="rechargeType === 'friend'" (click)="setRechargeType('friend')">
+          🤝 For Friend
+        </button>
+      </div>
+
+      <form [formGroup]="form" (ngSubmit)="onProceed()">
+
+        <!-- Mobile Number -->
+        <div class="form-group">
+          <label class="form-label">Mobile Number</label>
+          <input type="tel" class="form-control" formControlName="mobileNumber"
+            placeholder="Enter 10-digit mobile number" maxlength="10" />
+          <div class="form-error" *ngIf="mobileNumber?.invalid && mobileNumber?.touched">
+            <span *ngIf="mobileNumber?.errors?.['required']">Mobile number is required</span>
+            <span *ngIf="mobileNumber?.errors?.['pattern']">Enter a valid 10-digit Indian mobile number</span>
+          </div>
+        </div>
+
+        <!-- Operator -->
+        <div class="form-group">
+          <label class="form-label">Select Operator</label>
+          <div class="loading-container" *ngIf="loadingOperators" style="padding:1rem">
+            <div class="spinner spinner-sm"></div>
+          </div>
+          <div class="operator-cards" *ngIf="!loadingOperators">
+            <div
+              class="op-card"
+              *ngFor="let op of operators"
+              [class.selected]="form.value.operatorId == op.id"
+              (click)="selectOperator(op.id)"
+            >
+              <div class="op-card-logo" *ngIf="op.logoUrl">
+                <img [src]="op.logoUrl" [alt]="op.name" class="op-card-logo-img"
+                     (error)="$any($event.target).style.display='none'">
+              </div>
+              <div class="op-card-initial" *ngIf="!op.logoUrl">{{ op.code[0] }}</div>
+              <span class="op-card-name">{{ op.name }}</span>
+            </div>
+          </div>
+          <div class="form-error" *ngIf="operatorId?.invalid && operatorId?.touched">
+            Please select an operator
+          </div>
+        </div>
+
+        <!-- Plans -->
+        <div class="form-group" *ngIf="form.value.operatorId">
+          <label class="form-label">Select Plan</label>
+          <div class="loading-container" *ngIf="loadingPlans" style="padding:1rem">
+            <div class="spinner spinner-sm"></div>
+          </div>
+          <div class="plans-grid" *ngIf="!loadingPlans">
+            <div class="plan-card" *ngFor="let plan of plans"
+              [class.selected]="selectedPlan?.id === plan.id" 
+              [class.suggested]="plan.isSuggested"
+              (click)="selectPlan(plan)">
+              
+              <div class="suggested-badge" *ngIf="plan.isSuggested">⭐ RECOMMENDED</div>
+              
+              <div class="plan-price">₹{{ plan.price }}</div>
+              <div class="plan-name">{{ plan.name }}</div>
+              <div class="plan-details">
+                <span class="plan-detail-item">📶 {{ plan.data }}</span>
+                <span class="plan-detail-item">📅 {{ plan.validityDays }}d</span>
+              </div>
+              <div class="plan-desc text-sm text-muted mt-1" *ngIf="plan.description">{{ plan.description }}</div>
+            </div>
+            <div class="empty-state" *ngIf="plans.length === 0"><p>No plans available</p></div>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block btn-lg"
+          [disabled]="!selectedPlan || form.invalid">
+          Proceed to Pay ₹{{ selectedPlan?.price || '' }} →
+        </button>
+      </form>
+    </div>
+
+    <!-- Summary -->
+    <div class="recharge-summary" *ngIf="selectedPlan">
+      <div class="card summary-card">
+        <h3 class="card-title mb-3">Order Summary</h3>
+        <div class="summary-row"><span class="text-muted">Mobile</span><span class="font-semibold">{{ form.value.mobileNumber || '—' }}</span></div>
+        <div class="summary-row"><span class="text-muted">Plan</span><span class="font-semibold">{{ selectedPlan.name }}</span></div>
+        <div class="summary-row"><span class="text-muted">Data</span><span>{{ selectedPlan.data }}</span></div>
+        <div class="summary-row"><span class="text-muted">Validity</span><span>{{ selectedPlan.validityDays }} days</span></div>
+        <div class="divider"></div>
+        <div class="summary-total">
+          <span>Total</span>
+          <span class="total-amount">₹{{ selectedPlan.price }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

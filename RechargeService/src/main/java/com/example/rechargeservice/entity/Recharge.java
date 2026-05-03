@@ -9,6 +9,13 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+/*
+ * AUTHOR: Paila Murali Madhav
+ * CLASS: Recharge
+ * DESCRIPTION:
+ *   JPA entity representing a mobile recharge transaction record stored in the database.
+ *   Captures all details including operator, plan, payment mode, status, and timestamps.
+ */
 @Entity
 @Table(name = "recharges")
 @Data
@@ -43,6 +50,13 @@ public class Recharge {
 
     @Column(length = 100)
     private String transactionId;
+
+    private String operatorName;
+    private String planName;
+    private String planDescription;
+    private Integer validityDays;
+    private String userEmail;
+    private String paymentMode;
 
     @CreationTimestamp
     @Column(updatable = false)

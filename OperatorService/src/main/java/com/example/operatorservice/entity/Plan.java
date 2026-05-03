@@ -11,6 +11,13 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+/*
+ * AUTHOR: Paila Murali Madhav
+ * CLASS: Plan
+ * DESCRIPTION:
+ *   JPA entity representing a recharge plan offered by a telecom operator.
+ *   Contains plan name, price, validity, data allowance, description, and active status.
+ */
 @Entity
 @Table(name = "plans")
 @Data
@@ -41,6 +48,10 @@ public class Plan {
     @Column(nullable = false)
     @Builder.Default
     private Boolean isActive = true;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean isSuggested = false;
 
     @CreationTimestamp
     @Column(updatable = false)

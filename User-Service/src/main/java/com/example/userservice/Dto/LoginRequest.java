@@ -4,6 +4,13 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
+/*
+ * AUTHOR: Paila Murali Madhav
+ * CLASS: LoginRequest
+ * DESCRIPTION:
+ *   Data Transfer Object representing an inbound login request.
+ *   Contains the user's email and password with validation constraints.
+ */
 @Data
 public class LoginRequest {
 
@@ -13,5 +20,4 @@ public class LoginRequest {
 
     @NotBlank(message = "Password is required")
     private String password;
-
 }

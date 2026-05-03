@@ -3,6 +3,13 @@ package com.example.rechargeservice.dto;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 
+/*
+ * AUTHOR: Paila Murali Madhav
+ * CLASS: RechargeRequest
+ * DESCRIPTION:
+ *   Data Transfer Object representing an inbound mobile recharge request.
+ *   Contains user ID, operator ID, plan ID, mobile number, and payment mode with validation constraints.
+ */
 @Data
 public class RechargeRequest {
 
@@ -22,4 +29,7 @@ public class RechargeRequest {
             message = "Enter a valid 10-digit Indian mobile number"
     )
     private String mobileNumber;
+
+    @NotBlank(message = "Payment mode is required")
+    private String paymentMode;
 }

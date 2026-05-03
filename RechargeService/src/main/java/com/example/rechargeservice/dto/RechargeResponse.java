@@ -9,6 +9,13 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+/*
+ * AUTHOR: Paila Murali Madhav
+ * CLASS: RechargeResponse
+ * DESCRIPTION:
+ *   Data Transfer Object representing an outbound recharge response.
+ *   Contains all recharge details including status, transaction ID, and timestamps.
+ */
 @Data
 @Builder
 @NoArgsConstructor
@@ -22,6 +29,7 @@ public class RechargeResponse {
     private String mobileNumber;
     private BigDecimal amount;
     private RechargeStatus status;
+    private String paymentMode;
     private String transactionId;
     private LocalDateTime createdAt;
 }

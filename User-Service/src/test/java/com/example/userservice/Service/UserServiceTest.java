@@ -27,271 +27,359 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
 
-    @Mock private UserRepository userRepository;
-    @Mock private ModelMapper modelMapper;
-    @Mock private PasswordEncoder passwordEncoder;
-    @Mock private JwtUtil jwtUtil;
-    @Mock private RechargeClient rechargeClient;
-    @Mock private PaymentClient paymentClient;
-
-    @InjectMocks
-    private UserService userService;
-
-    private User user;
-    private UserResponse response;
+        @Mock
+        private UserRepository userRepository;
+        @Mock
+        private ModelMapper modelMapper;
+        @Mock
+        private PasswordEncoder passwordEncoder;
+        @Mock
+        private JwtUtil jwtUtil;
+        @Mock
+        private RechargeClient rechargeClient;
+        @Mock
+        private PaymentClient paymentClient;
 
-    @BeforeEach
-    void setup() {
+        @InjectMocks
+        private UserService userService;
+
+        private User user;
+        private UserResponse response;
+
+        @BeforeEach
+        void setup() {
+
+                user = new User();
+                user.setId(1L);
+                user.setEmail("murali@gmail.com");
+                user.setPassword("encoded");
+                user.setPhoneNumber("9999999999");
+                user.setIsActive(true);
+                user.setRole(Role.USER);
+
+                response = new UserResponse();
+                response.setId(1L);
+                response.setEmail("murali@gmail.com");
+        }
 
-        user = new User();
-        user.setId(1L);
-        user.setEmail("murali@gmail.com");
-        user.setPassword("encoded");
-        user.setPhoneNumber("9999999999");
-        user.setIsActive(true);
-        user.setRole(Role.USER);
+        // REGISTER SUCCESS
+        @Test
+        void register_success() {
 
-        response = new UserResponse();
-        response.setId(1L);
-        response.setEmail("murali@gmail.com");
-    }
+                RegisterRequest req = new RegisterRequest();
+                req.setEmail("new@gmail.com");
+                req.setPhoneNumber("8888888888");
+                req.setPassword("pass");
 
-    // REGISTER SUCCESS
-    @Test
-    void register_success() {
+                when(userRepository.existsByEmail(any())).thenReturn(false);
+                when(userRepository.existsByPhoneNumber(any())).thenReturn(false);
+                when(modelMapper.map(any(), eq(User.class))).thenReturn(user);
+                when(passwordEncoder.encode(any())).thenReturn("encoded");
+                when(userRepository.save(any())).thenReturn(user);
+                when(modelMapper.map(any(), eq(UserResponse.class))).thenReturn(response);
 
-        RegisterRequest req = new RegisterRequest();
-        req.setEmail("new@gmail.com");
-        req.setPhoneNumber("8888888888");
-        req.setPassword("pass");
+                UserResponse result = userService.register(req);
 
-        when(userRepository.existsByEmail(any())).thenReturn(false);
-        when(userRepository.existsByPhoneNumber(any())).thenReturn(false);
-        when(modelMapper.map(any(), eq(User.class))).thenReturn(user);
-        when(passwordEncoder.encode(any())).thenReturn("encoded");
-        when(userRepository.save(any())).thenReturn(user);
-        when(modelMapper.map(any(), eq(UserResponse.class))).thenReturn(response);
+                assertNotNull(result);
+        }
 
-        UserResponse result = userService.register(req);
+        // GET ALL USERS
+        @Test
+        void getAllUsers_success() {
+                when(userRepository.findAll()).thenReturn(java.util.List.of(user));
+                when(modelMapper.map(any(), eq(UserResponse.class))).thenReturn(response);
 
-        assertNotNull(result);
-    }
+                java.util.List<UserResponse> result = userService.getAllUsers();
 
-    // REGISTER EMAIL DUPLICATE
-    @Test
-    void register_emailDuplicate() {
+                assertNotNull(result);
+                assertEquals(1, result.size());
+        }
 
-        RegisterRequest req = new RegisterRequest();
-        req.setEmail("murali@gmail.com");
+        // REGISTER EMAIL DUPLICATE
+        @Test
+        void register_emailDuplicate() {
 
-        when(userRepository.existsByEmail(any())).thenReturn(true);
+                RegisterRequest req = new RegisterRequest();
+                req.setEmail("murali@gmail.com");
 
-        assertThrows(DuplicateException.class,
-                () -> userService.register(req));
-    }
-    @Test
-    void updateProfile_phoneDuplicate() {
+                when(userRepository.existsByEmail(any())).thenReturn(true);
 
-        UpdateProfile req = new UpdateProfile();
-        req.setPhoneNumber("9999999999");
+                assertThrows(DuplicateException.class,
+                                () -> userService.register(req));
+        }
 
-        when(userRepository.findByEmailAndIsActiveTrue(any()))
-                .thenReturn(Optional.of(user));
+        @Test
+        void updateProfile_phoneDuplicate() {
 
-        when(userRepository.existsByPhoneNumberAndIdNot(any(), any()))
-                .thenReturn(true);
+                UpdateProfile req = new UpdateProfile();
+                req.setPhoneNumber("9999999999");
 
-        assertThrows(DuplicateException.class,
-                () -> userService.updateProfile("murali@gmail.com", req));
-    }
-    @Test
-    void permanentDeleteUser_success() {
+                when(userRepository.findByEmailAndIsActiveTrue(any()))
+                                .thenReturn(Optional.of(user));
 
-        when(userRepository.findById(1L))
-                .thenReturn(Optional.of(user));
+                when(userRepository.existsByPhoneNumberAndIdNot(any(), any()))
+                                .thenReturn(true);
 
-        String result = userService.permanentDeleteUser(1L);
+                assertThrows(DuplicateException.class,
+                                () -> userService.updateProfile("murali@gmail.com", req));
+        }
 
-        assertEquals("User with id 1 has been permanently deleted", result);
-    }
+        @Test
+        void permanentDeleteUser_success() {
 
-    // REGISTER PHONE DUPLICATE
-    @Test
-    void register_phoneDuplicate() {
+                when(userRepository.findById(1L))
+                                .thenReturn(Optional.of(user));
 
-        RegisterRequest req = new RegisterRequest();
-        req.setEmail("new@gmail.com");
-        req.setPhoneNumber("9999999999");
+                String result = userService.permanentDeleteUser(1L);
 
-        when(userRepository.existsByEmail(any())).thenReturn(false);
-        when(userRepository.existsByPhoneNumber(any())).thenReturn(true);
+                assertEquals("User with id 1 has been permanently deleted", result);
+        }
 
-        assertThrows(DuplicateException.class,
-                () -> userService.register(req));
-    }
+        // REGISTER PHONE DUPLICATE
+        @Test
+        void register_phoneDuplicate() {
 
-    // LOGIN SUCCESS
-    @Test
-    void login_success() {
+                RegisterRequest req = new RegisterRequest();
+                req.setEmail("new@gmail.com");
+                req.setPhoneNumber("9999999999");
 
-        LoginRequest req = new LoginRequest();
-        req.setEmail("murali@gmail.com");
-        req.setPassword("pass");
+                when(userRepository.existsByEmail(any())).thenReturn(false);
+                when(userRepository.existsByPhoneNumber(any())).thenReturn(true);
 
-        when(userRepository.findByEmailAndIsActiveTrue(any()))
-                .thenReturn(Optional.of(user));
+                assertThrows(DuplicateException.class,
+                                () -> userService.register(req));
+        }
 
-        when(passwordEncoder.matches(any(), any())).thenReturn(true);
+        // LOGIN SUCCESS
+        @Test
+        void login_success() {
 
-        when(jwtUtil.generateToken(any(), anyLong(), any()))
-                .thenReturn("token");
+                LoginRequest req = new LoginRequest();
+                req.setEmail("murali@gmail.com");
+                req.setPassword("pass");
 
-        when(jwtUtil.getExpiration()).thenReturn(86400000L);
+                when(userRepository.findByEmailAndIsActiveTrue(any()))
+                                .thenReturn(Optional.of(user));
 
-        LoginResponse res = userService.login(req);
+                when(passwordEncoder.matches(any(), any())).thenReturn(true);
 
-        assertEquals("token", res.getToken());
-    }
+                when(jwtUtil.generateToken(any(), anyLong(), any()))
+                                .thenReturn("token");
 
-    // LOGIN USER NOT FOUND
-    @Test
-    void login_userNotFound() {
+                when(jwtUtil.getExpiration()).thenReturn(86400000L);
 
-        LoginRequest req = new LoginRequest();
-        req.setEmail("unknown@gmail.com");
+                LoginResponse res = userService.login(req);
 
-        when(userRepository.findByEmailAndIsActiveTrue(any()))
-                .thenReturn(Optional.empty());
+                assertEquals("token", res.getToken());
+        }
 
-        assertThrows(NotFoundException.class,
-                () -> userService.login(req));
-    }
+        // LOGIN USER NOT FOUND
+        @Test
+        void login_userNotFound() {
 
-    // LOGIN INVALID PASSWORD
-    @Test
-    void login_invalidPassword() {
+                LoginRequest req = new LoginRequest();
+                req.setEmail("unknown@gmail.com");
 
-        LoginRequest req = new LoginRequest();
-        req.setEmail("murali@gmail.com");
-        req.setPassword("wrong");
+                when(userRepository.findByEmailAndIsActiveTrue(any()))
+                                .thenReturn(Optional.empty());
 
-        when(userRepository.findByEmailAndIsActiveTrue(any()))
-                .thenReturn(Optional.of(user));
+                assertThrows(NotFoundException.class,
+                                () -> userService.login(req));
+        }
 
-        when(passwordEncoder.matches(any(), any())).thenReturn(false);
+        // LOGIN INVALID PASSWORD
+        @Test
+        void login_invalidPassword() {
 
-        assertThrows(InvalidDataException.class,
-                () -> userService.login(req));
-    }
+                LoginRequest req = new LoginRequest();
+                req.setEmail("murali@gmail.com");
+                req.setPassword("wrong");
 
-    // GET USER BY ID
-    @Test
-    void getUserById_success() {
+                when(userRepository.findByEmailAndIsActiveTrue(any()))
+                                .thenReturn(Optional.of(user));
 
-        when(userRepository.findById(1L))
-                .thenReturn(Optional.of(user));
+                when(passwordEncoder.matches(any(), any())).thenReturn(false);
 
-        when(modelMapper.map(any(), eq(UserResponse.class)))
-                .thenReturn(response);
+                assertThrows(InvalidDataException.class,
+                                () -> userService.login(req));
+        }
 
-        UserResponse res = userService.getUserById(1L);
+        // GET USER BY ID
+        @Test
+        void getUserById_success() {
 
-        assertNotNull(res);
-    }
+                when(userRepository.findById(1L))
+                                .thenReturn(Optional.of(user));
 
-    // GET USER BY ID NOT FOUND
-    @Test
-    void getUserById_notFound() {
+                when(modelMapper.map(any(), eq(UserResponse.class)))
+                                .thenReturn(response);
 
-        when(userRepository.findById(any()))
-                .thenReturn(Optional.empty());
+                UserResponse res = userService.getUserById(1L);
 
-        assertThrows(NotFoundException.class,
-                () -> userService.getUserById(1L));
-    }
+                assertNotNull(res);
+        }
 
-    // DELETE USER
-    @Test
-    void deleteUser_success() {
+        // GET USER BY ID NOT FOUND
+        @Test
+        void getUserById_notFound() {
 
-        when(userRepository.findById(1L))
-                .thenReturn(Optional.of(user));
+                when(userRepository.findById(any()))
+                                .thenReturn(Optional.empty());
 
-        String res = userService.deleteUser(1L);
+                assertThrows(NotFoundException.class,
+                                () -> userService.getUserById(1L));
+        }
 
-        assertEquals("User deleted successfully", res);
-    }
+        // DELETE USER
+        @Test
+        void deleteUser_success() {
 
-    // GET PROFILE
-    @Test
-    void getProfile_success() {
+                when(userRepository.findById(1L))
+                                .thenReturn(Optional.of(user));
 
-        when(userRepository.findByEmailAndIsActiveTrue(any()))
-                .thenReturn(Optional.of(user));
+                String res = userService.deleteUser(1L);
 
-        when(modelMapper.map(any(), eq(UserResponse.class)))
-                .thenReturn(response);
+                assertEquals("User deleted successfully", res);
+        }
 
-        UserResponse res = userService.getProfile("murali@gmail.com");
+        // GET PROFILE
+        @Test
+        void getProfile_success() {
 
-        assertNotNull(res);
-    }
+                when(userRepository.findByEmailAndIsActiveTrue(any()))
+                                .thenReturn(Optional.of(user));
 
-    // UPDATE PROFILE
-    @Test
-    void updateProfile_success() {
+                when(modelMapper.map(any(), eq(UserResponse.class)))
+                                .thenReturn(response);
 
-        UpdateProfile req = new UpdateProfile();
-        req.setName("Murali Updated");
+                UserResponse res = userService.getProfile("murali@gmail.com");
 
-        when(userRepository.findByEmailAndIsActiveTrue(any()))
-                .thenReturn(Optional.of(user));
+                assertNotNull(res);
+        }
 
-        when(userRepository.save(any())).thenReturn(user);
+        // UPDATE PROFILE
+        @Test
+        void updateProfile_success() {
 
-        when(modelMapper.map(any(), eq(UserResponse.class)))
-                .thenReturn(response);
+                UpdateProfile req = new UpdateProfile();
+                req.setName("Murali Updated");
 
-        UserResponse res = userService.updateProfile("murali@gmail.com", req);
+                when(userRepository.findByEmailAndIsActiveTrue(any()))
+                                .thenReturn(Optional.of(user));
 
-        assertNotNull(res);
-    }
+                when(userRepository.save(any())).thenReturn(user);
 
-    // DELETE MY ACCOUNT
-    @Test
-    void deleteMyAccount_success() {
+                when(modelMapper.map(any(), eq(UserResponse.class)))
+                                .thenReturn(response);
 
-        when(userRepository.findByEmailAndIsActiveTrue(any()))
-                .thenReturn(Optional.of(user));
+                UserResponse res = userService.updateProfile("murali@gmail.com", req);
 
-        String res = userService.deleteMyAccount("murali@gmail.com");
+                assertNotNull(res);
+        }
 
-        assertEquals("Your account has been permanently deleted", res);
-    }
+        // DELETE MY ACCOUNT
+        @Test
+        void deleteMyAccount_success() {
 
-    // RECHARGE HISTORY SERVICE DOWN
-    @Test
-    void rechargeHistory_serviceDown() {
+                when(userRepository.findByEmailAndIsActiveTrue(any()))
+                                .thenReturn(Optional.of(user));
 
-        when(userRepository.findByEmailAndIsActiveTrue(any()))
-                .thenReturn(Optional.of(user));
+                String res = userService.deleteMyAccount("murali@gmail.com");
 
-        when(rechargeClient.getRechargeHistory(anyLong()))
-                .thenThrow(new RuntimeException());
+                assertEquals("Your account has been permanently deleted", res);
+        }
 
-        assertThrows(RuntimeException.class,
-                () -> userService.getRechargeHistoryByEmail("murali@gmail.com"));
-    }
+        // RECHARGE HISTORY SERVICE DOWN
+        @Test
+        void rechargeHistory_serviceDown() {
 
-    // TRANSACTION STATUS SERVICE DOWN
-    @Test
-    void transactionStatus_serviceDown() {
+                when(userRepository.findByEmailAndIsActiveTrue(any()))
+                                .thenReturn(Optional.of(user));
 
-        when(paymentClient.getTransactionStatus(any()))
-                .thenThrow(new RuntimeException());
+                when(rechargeClient.getRechargeHistory(anyLong()))
+                                .thenThrow(new RuntimeException());
 
-        assertThrows(RuntimeException.class,
-                () -> userService.getTransactionStatus("tx123"));
-    }
+                assertThrows(RuntimeException.class,
+                                () -> userService.getRechargeHistoryByEmail("murali@gmail.com"));
+        }
+
+        // TRANSACTION STATUS SERVICE DOWN
+        @Test
+        void transactionStatus_serviceDown() {
+
+                when(paymentClient.getTransactionStatus(any()))
+                                .thenThrow(new RuntimeException());
+
+                assertThrows(RuntimeException.class,
+                                () -> userService.getTransactionStatus("tx123"));
+        }
+
+        // BLOCK USER SUCCESS
+        @Test
+        void blockUser_success() {
+                when(userRepository.findById(1L))
+                                .thenReturn(Optional.of(user));
+                when(userRepository.save(any())).thenReturn(user);
+
+                String result = userService.blockUser(1L);
+
+                assertEquals("User blocked successfully", result);
+                verify(userRepository).save(user);
+        }
+
+        // BLOCK USER NOT FOUND
+        @Test
+        void blockUser_notFound() {
+                when(userRepository.findById(1L))
+                                .thenReturn(Optional.empty());
+
+                assertThrows(NotFoundException.class,
+                                () -> userService.blockUser(1L));
+        }
+
+        // BLOCK USER ALREADY BLOCKED
+        @Test
+        void blockUser_alreadyBlocked() {
+                user.setIsActive(false);
+                when(userRepository.findById(1L))
+                                .thenReturn(Optional.of(user));
+
+                assertThrows(InvalidDataException.class,
+                                () -> userService.blockUser(1L));
+        }
+
+        // UNBLOCK USER SUCCESS
+        @Test
+        void unblockUser_success() {
+                user.setIsActive(false);
+                when(userRepository.findById(1L))
+                                .thenReturn(Optional.of(user));
+                when(userRepository.save(any())).thenReturn(user);
+
+                String result = userService.unblockUser(1L);
+
+                assertEquals("User unblocked successfully", result);
+                verify(userRepository).save(user);
+        }
+
+        // UNBLOCK USER NOT FOUND
+        @Test
+        void unblockUser_notFound() {
+                when(userRepository.findById(1L))
+                                .thenReturn(Optional.empty());
+
+                assertThrows(NotFoundException.class,
+                                () -> userService.unblockUser(1L));
+        }
+
+        // UNBLOCK USER ALREADY ACTIVE
+        @Test
+        void unblockUser_alreadyActive() {
+                when(userRepository.findById(1L))
+                                .thenReturn(Optional.of(user));
+
+                assertThrows(InvalidDataException.class,
+                                () -> userService.unblockUser(1L));
+        }
 
 }

@@ -106,4 +106,14 @@ class UserControllerTest {
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
     }
+
+    // INTERNAL GET USER BY ID
+    @Test
+    @WithMockUser
+    void getInternalUserById_success() throws Exception {
+        when(userService.getUserById(1L)).thenReturn(new UserResponse());
+
+        mockMvc.perform(get("/api/users/internal/1"))
+                .andExpect(status().isOk());
+    }
 }

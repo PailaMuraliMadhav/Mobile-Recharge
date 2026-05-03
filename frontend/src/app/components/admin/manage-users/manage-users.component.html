@@ -1,0 +1,104 @@
+<div class="page-wrapper">
+  <div class="flex justify-between items-center mb-3" style="flex-wrap:wrap; gap:1rem;">
+    <div>
+      <div class="section-title">Manage Users 👥</div>
+      <p class="section-subtitle">View and manage all registered users</p>
+    </div>
+    <a routerLink="/admin" class="btn btn-ghost btn-sm">← Back to Admin</a>
+  </div>
+
+
+  <div class="loading-container" *ngIf="loading">
+    <div class="spinner"></div>
+  </div>
+
+  <ng-container *ngIf="!loading">
+    <div class="card mb-3">
+      <input
+        type="text"
+        class="form-control"
+        placeholder="🔍 Search by name, email or phone..."
+        [(ngModel)]="searchTerm"
+        (input)="applyFilter()"
+      />
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">{{ filteredUsers.length }} User(s)</span>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Phone</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th>Joined</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let user of filteredUsers">
+              <td class="text-muted text-sm">{{ user.id }}</td>
+              <td class="font-semibold">{{ user.name }}</td>
+              <td class="text-sm">{{ user.email }}</td>
+              <td>{{ user.phoneNumber }}</td>
+              <td>
+                <span class="badge" [ngClass]="user.role === 'ADMIN' ? 'badge-warning' : 'badge-info'">
+                  {{ user.role }}
+                </span>
+              </td>
+              <td>
+                <span class="badge" [ngClass]="user.isActive ? 'badge-success' : 'badge-danger'">
+                  {{ user.isActive ? 'Active' : 'Blocked' }}
+                </span>
+              </td>
+              <td class="text-sm text-muted">{{ user.createdAt | istDate:'dd MMM yyyy' }}</td>
+              <td>
+                <!-- Show Block button for active users (except admins) -->
+                <button
+                  *ngIf="user.isActive && user.role !== 'ADMIN' && actionConfirmId !== user.id"
+                  class="btn btn-warning btn-sm"
+                  (click)="confirmBlock(user.id)"
+                >
+                  Block
+                </button>
+
+                <!-- Show Unblock button for blocked users -->
+                <button
+                  *ngIf="!user.isActive && actionConfirmId !== user.id"
+                  class="btn btn-success btn-sm"
+                  (click)="confirmUnblock(user.id)"
+                >
+                  Unblock
+                </button>
+
+                <!-- Show nothing for admins who are active -->
+                <span *ngIf="user.isActive && user.role === 'ADMIN' && actionConfirmId !== user.id" class="text-muted text-sm">
+                  —
+                </span>
+
+                <!-- Confirmation buttons -->
+                <div class="confirm-actions" *ngIf="actionConfirmId === user.id">
+                  <button 
+                    class="btn btn-sm"
+                    [ngClass]="actionType === 'block' ? 'btn-warning' : 'btn-success'"
+                    (click)="executeAction(user.id)" 
+                    [disabled]="processing"
+                  >
+                    {{ processing ? '...' : 'Confirm' }}
+                  </button>
+                  <button class="btn btn-ghost btn-sm" (click)="cancelAction()">Cancel</button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </ng-container>
+</div>

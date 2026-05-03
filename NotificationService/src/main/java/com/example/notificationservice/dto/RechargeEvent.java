@@ -17,5 +17,12 @@ public class RechargeEvent {
     private BigDecimal amount;
     private String status;
     private String transactionId;
+    private String operatorName;
+    private String planName;
+    private String planDescription;
+    private Integer validityDays;
+    private String userEmail;
     private LocalDateTime createdAt;
+
+
 }

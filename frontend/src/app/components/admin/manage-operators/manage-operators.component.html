@@ -1,0 +1,187 @@
+<div class="page-wrapper">
+  <div class="flex justify-between items-center mb-3" style="flex-wrap:wrap; gap:1rem;">
+    <div>
+      <div class="section-title">Manage Operators 🌐</div>
+      <p class="section-subtitle">Add, edit and manage operators and their plans</p>
+    </div>
+    <div class="flex gap-1">
+      <button class="btn btn-primary btn-sm" (click)="openAddOperator()">+ Add Operator</button>
+      <a routerLink="/admin" class="btn btn-ghost btn-sm">← Back</a>
+    </div>
+  </div>
+
+
+
+  <div class="loading-container" *ngIf="loading">
+    <div class="spinner"></div>
+  </div>
+
+  <div class="operators-admin-layout" *ngIf="!loading">
+    <!-- Operators List -->
+    <div class="operators-list card">
+      <div class="card-header">
+        <h3 class="card-title">Operators ({{ operators.length }})</h3>
+      </div>
+      <div class="operator-items">
+        <div
+          class="operator-item"
+          *ngFor="let op of operators"
+          [class.active]="selectedOperator?.id === op.id"
+          (click)="selectOperator(op)"
+        >
+          <div class="op-logo" *ngIf="op.logoUrl">
+            <img [src]="op.logoUrl" [alt]="op.name" class="op-logo-img" (error)="$any($event.target).style.display='none'">
+          </div>
+          <div class="op-logo op-logo-placeholder" *ngIf="!op.logoUrl">{{ op.code[0] }}</div>
+          <div class="op-info">
+            <div class="op-name-text">{{ op.name }}</div>
+            <div class="op-code-text">{{ op.code }}</div>
+          </div>
+          <div class="op-actions" (click)="$event.stopPropagation()">
+            <button class="btn btn-ghost btn-sm" (click)="openEditOperator(op)" title="Edit">✏️</button>
+            <button class="btn btn-danger btn-sm" (click)="deleteOperator(op.id)" title="Delete">🗑️</button>
+          </div>
+        </div>
+        <div class="empty-state" *ngIf="operators.length === 0">
+          <p>No operators yet</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Plans Section -->
+    <div class="plans-admin-section">
+      <div class="card" *ngIf="selectedOperator">
+        <div class="card-header">
+          <h3 class="card-title">{{ selectedOperator.name }} Plans</h3>
+          <button class="btn btn-primary btn-sm" (click)="openAddPlan()">+ Add Plan</button>
+        </div>
+
+        <div class="loading-container" *ngIf="loadingPlans" style="padding:1rem;">
+          <div class="spinner spinner-sm"></div>
+        </div>
+
+        <div class="empty-state" *ngIf="!loadingPlans && plans.length === 0">
+          <div class="empty-icon">📋</div>
+          <p>No plans for this operator</p>
+          <button class="btn btn-primary btn-sm mt-2" (click)="openAddPlan()">Add First Plan</button>
+        </div>
+
+        <div class="plans-admin-list" *ngIf="!loadingPlans && plans.length > 0">
+          <div class="plan-admin-item" *ngFor="let plan of plans">
+            <div class="plan-admin-info">
+              <div class="plan-admin-price">₹{{ plan.price }}</div>
+              <div class="plan-admin-details">
+                <div class="font-semibold">{{ plan.name }}</div>
+                <div class="text-sm text-muted">{{ plan.data }} • {{ plan.validityDays }} days</div>
+                <div class="text-xs text-muted" *ngIf="plan.description">{{ plan.description }}</div>
+              </div>
+            </div>
+            <div class="plan-admin-actions">
+              <span class="badge badge-warning" *ngIf="plan.isSuggested" style="margin-right:0.5rem">⭐ Suggested</span>
+              <span class="badge" [ngClass]="plan.isActive ? 'badge-success' : 'badge-danger'">
+                {{ plan.isActive ? 'Active' : 'Inactive' }}
+              </span>
+              <button class="btn btn-ghost btn-sm" (click)="openEditPlan(plan)">✏️ Edit</button>
+              <button class="btn btn-danger btn-sm" (click)="deletePlan(plan.id)">🗑️</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card empty-state" *ngIf="!selectedOperator">
+        <div class="empty-icon">👈</div>
+        <p>Select an operator to manage its plans</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Operator Modal -->
+<div class="modal-overlay" *ngIf="showOperatorForm" (click)="closeOperatorForm()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3 class="modal-title">{{ editingOperator ? 'Edit Operator' : 'Add Operator' }}</h3>
+      <button class="modal-close" (click)="closeOperatorForm()">✕</button>
+    </div>
+    <form [formGroup]="operatorForm" (ngSubmit)="saveOperator()">
+      <div class="form-group">
+        <label class="form-label">Operator Name</label>
+        <input type="text" class="form-control" formControlName="name" placeholder="e.g. Jio" />
+        <div class="form-error" *ngIf="operatorForm.get('name')?.invalid && operatorForm.get('name')?.touched">
+          Name is required (min 2 chars)
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Operator Code</label>
+        <input type="text" class="form-control" formControlName="code" placeholder="e.g. JIO" maxlength="10" />
+        <div class="form-error" *ngIf="operatorForm.get('code')?.invalid && operatorForm.get('code')?.touched">
+          Code is required (2-10 chars)
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description (optional)</label>
+        <input type="text" class="form-control" formControlName="description" placeholder="Brief description" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Logo URL (optional)</label>
+        <input type="url" class="form-control" formControlName="logoUrl" placeholder="https://example.com/logo.png" />
+        <div class="logo-preview" *ngIf="operatorForm.get('logoUrl')?.value">
+          <img [src]="operatorForm.get('logoUrl')?.value" alt="Logo preview" class="logo-preview-img"
+               (error)="$any($event.target).style.display='none'">
+        </div>
+      </div>
+      <div class="flex gap-1 justify-between">
+        <button type="submit" class="btn btn-primary" [disabled]="savingOperator">
+          <span class="spinner spinner-sm" *ngIf="savingOperator"></span>
+          {{ savingOperator ? 'Saving...' : (editingOperator ? 'Update' : 'Add Operator') }}
+        </button>
+        <button type="button" class="btn btn-ghost" (click)="closeOperatorForm()">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Plan Modal -->
+<div class="modal-overlay" *ngIf="showPlanForm" (click)="closePlanForm()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3 class="modal-title">{{ editingPlan ? 'Edit Plan' : 'Add Plan' }}</h3>
+      <button class="modal-close" (click)="closePlanForm()">✕</button>
+    </div>
+    <form [formGroup]="planForm" (ngSubmit)="savePlan()">
+      <div class="form-group">
+        <label class="form-label">Plan Name</label>
+        <input type="text" class="form-control" formControlName="name" placeholder="e.g. Basic 28" />
+      </div>
+      <div class="grid-2">
+        <div class="form-group">
+          <label class="form-label">Price (₹)</label>
+          <input type="number" class="form-control" formControlName="price" placeholder="199" min="1" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Validity (days)</label>
+          <input type="number" class="form-control" formControlName="validityDays" placeholder="28" min="1" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Data</label>
+        <input type="text" class="form-control" formControlName="data" placeholder="e.g. 1.5GB/day" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description (optional)</label>
+        <input type="text" class="form-control" formControlName="description" placeholder="Unlimited calls + SMS" />
+      </div>
+      <div class="form-group flex items-center gap-2 mb-3">
+        <input type="checkbox" id="isSuggested" formControlName="isSuggested" style="width:1.2rem; height:1.2rem;">
+        <label for="isSuggested" class="form-label mb-0 pointer">Mark as Suggested Plan</label>
+      </div>
+      <div class="flex gap-1 justify-between">
+        <button type="submit" class="btn btn-primary" [disabled]="savingPlan">
+          <span class="spinner spinner-sm" *ngIf="savingPlan"></span>
+          {{ savingPlan ? 'Saving...' : (editingPlan ? 'Update Plan' : 'Add Plan') }}
+        </button>
+        <button type="button" class="btn btn-ghost" (click)="closePlanForm()">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>

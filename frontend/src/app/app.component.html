@@ -1,0 +1,13 @@
+<!-- Sidebar — only when logged in -->
+<app-sidebar *ngIf="authService.isLoggedIn"></app-sidebar>
+
+<!-- Topbar — only when logged in (landing/login/register have their own nav) -->
+<app-navbar *ngIf="authService.isLoggedIn"></app-navbar>
+
+<!-- Main content -->
+<main class="main-content" [class.with-sidebar]="authService.isLoggedIn">
+  <router-outlet></router-outlet>
+</main>
+
+<!-- Global toast notifications -->
+<app-toast></app-toast>

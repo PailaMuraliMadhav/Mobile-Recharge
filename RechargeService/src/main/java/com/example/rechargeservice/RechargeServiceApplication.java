@@ -4,16 +4,20 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.cloud.openfeign.EnableFeignClients;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 
+/*
+ * AUTHOR: Paila Murali Madhav
+ * CLASS: RechargeServiceApplication
+ * DESCRIPTION:
+ *   Spring Boot application entry point for the Recharge microservice.
+ *   Enables Eureka service discovery and Feign client support for inter-service communication.
+ */
 @SpringBootApplication
 @EnableDiscoveryClient
 @EnableFeignClients
-@EnableMethodSecurity
 public class RechargeServiceApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(RechargeServiceApplication.class, args);
-	}
-
+    public static void main(String[] args) {
+        SpringApplication.run(RechargeServiceApplication.class, args);
+    }
 }
