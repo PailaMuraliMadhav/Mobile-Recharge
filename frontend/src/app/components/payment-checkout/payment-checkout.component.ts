@@ -204,4 +204,12 @@ export class PaymentCheckoutComponent implements OnInit {
   get expiry()     { return this.cardForm.get('expiry'); }
   get cvv()        { return this.cardForm.get('cvv'); }
   get upiId()      { return this.upiForm.get('upiId'); }
+
+  goToHistory(): void {
+    this.router.navigate(['/history']);
+  }
+
+  goToRecharge(): void {
+    this.router.navigate(['/recharge']);
+  }
 }

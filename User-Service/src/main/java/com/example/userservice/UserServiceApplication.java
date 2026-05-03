@@ -12,12 +12,11 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  * DESCRIPTION:
  *   Spring Boot application entry point for the User microservice.
  *   Enables Eureka service discovery, Feign client support for inter-service communication,
- *   and scheduled tasks for OTP cleanup.
+ *   Enables Eureka service discovery and Feign client support for inter-service communication.
  */
 @SpringBootApplication
 @EnableDiscoveryClient
 @EnableFeignClients
-@EnableScheduling
 public class UserServiceApplication {
 
     /* ================================================================
