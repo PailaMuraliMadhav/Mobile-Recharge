@@ -23,6 +23,7 @@ replay_pid*
 .env
 .gemini/
 .antigravity/
+docs/
 
 # Spring Boot
 .mvn/
