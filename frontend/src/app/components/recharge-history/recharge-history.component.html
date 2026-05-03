@@ -11,13 +11,8 @@
     <!-- Filters -->
     <div class="filters-bar card mb-3">
       <div class="filter-group">
-        <input
-          type="text"
-          class="form-control"
-          placeholder="🔍 Search by mobile or transaction ID..."
-          [(ngModel)]="searchTerm"
-          (input)="applyFilter()"
-        />
+        <input type="text" class="form-control" placeholder="🔍 Search by mobile or transaction ID..."
+          [(ngModel)]="searchTerm" (input)="applyFilter()" />
       </div>
       <div class="filter-group">
         <select class="form-control" [(ngModel)]="filterStatus" (change)="applyFilter()">
@@ -51,7 +46,6 @@
               <th>Mobile</th>
               <th>Amount</th>
               <th>Status</th>
-              <th>Payment Mode</th>
               <th>Transaction ID</th>
               <th>Date</th>
             </tr>
@@ -62,7 +56,6 @@
               <td class="font-semibold">{{ r.mobileNumber }}</td>
               <td class="text-primary-color font-bold">₹{{ r.amount }}</td>
               <td><span class="badge" [ngClass]="getStatusClass(r.status)">{{ r.status }}</span></td>
-              <td>{{ r.paymentMode === 'CANCELLED' ? 'Cancelled' : r.paymentMode }}</td>
               <td class="text-sm text-muted">{{ r.transactionId || '—' }}</td>
               <td class="text-sm text-muted">{{ r.createdAt | istDate:'dd MMM yyyy, hh:mm a' }}</td>
             </tr>

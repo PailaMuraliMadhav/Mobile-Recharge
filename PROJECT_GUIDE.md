@@ -34,7 +34,7 @@ OmniRecharge is built using a **Microservices Architecture**. Instead of one gia
 | **Database** | MySQL 8.0 | Reliable relational database for transactions. |
 | **Messaging** | RabbitMQ | Handles asynchronous tasks (like emails) to keep the UI fast. |
 | **Tracing** | Zipkin | Tracks a request as it hops across multiple services. |
-| **Payment** | Simulation | Standard payment gateway integration logic. |
+| **Payment** | Razorpay Integration | Full end-to-end secure payment gateway with signature verification. |
 | **Deployment** | Docker & Compose | Ensures the app runs exactly the same on any machine. |
 
 ---
@@ -138,10 +138,10 @@ When a user clicks "Proceed to Pay", here is exactly what happens:
    - Saves a record in the database with status `PENDING`.
    - Sends a message to **RabbitMQ** saying "Recharge Initiated".
 4. **Notification Service**: Sees the message in RabbitMQ and sends a "Payment Pending" email.
-5. **Recharge Service**: Calls `payment-service` to initiate the payment process.
-6. **Payment Service**: Creates a new Payment Order and sends details back to the browser.
-7. **Browser**: Opens the payment interface where the user enters their details.
-8. **After Payment**: The system receives a success signal. `recharge-service` updates the record to `SUCCESS`.
+5. **Recharge Service**: Calls `payment-service` to initiate a **Razorpay Order**.
+6. **Payment Service**: Creates a Razorpay Order ID and sends it back to the browser.
+7. **Browser**: Opens the **Razorpay Secure Popup** where the user pays via UPI/Card/Netbanking.
+8. **After Payment**: The system verifies the Razorpay signature. If valid, `recharge-service` updates to `SUCCESS`.
 9. **Final Event**: A final "Recharge Successful" email is sent via RabbitMQ.
 
 ---

@@ -5,7 +5,7 @@
 }
 
 .checkout-container {
-  max-width: 1100px;
+  max-width: 1000px;
   margin: 0 auto;
   display: grid;
   grid-template-columns: 1fr 380px;
@@ -78,145 +78,94 @@
   font-weight: 900;
 }
 
-/* Payment Card & Tabs */
+/* Payment Card */
 .payment-card {
   padding: 0 !important;
   overflow: hidden;
   border: 1px solid rgba(255,255,255,0.05);
+  background: rgba(30, 41, 59, 0.7);
+  backdrop-filter: blur(10px);
 }
 
-.pay-tabs {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  background: rgba(0,0,0,0.2);
-  border-bottom: 1px solid rgba(255,255,255,0.05);
+.pay-header {
+  padding: 2rem 2.5rem 0;
+  text-align: center;
 }
 
-.pay-tab {
-  background: none;
-  border: none;
-  padding: 1.2rem;
-  color: #94a3b8;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s;
-  position: relative;
-}
-
-.pay-tab:hover {
+.pay-header h3 {
+  font-size: 1.4rem;
+  font-weight: 700;
   color: #f8fafc;
-  background: rgba(255,255,255,0.02);
+  margin-bottom: 0.5rem;
 }
 
-.pay-tab.active {
-  color: #fb923c;
-  background: rgba(251, 146, 60, 0.05);
-}
-
-.pay-tab.active::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: #fb923c;
+.pay-header p {
+  color: #94a3b8;
+  font-size: 0.9rem;
 }
 
 .pay-tab-content {
+  padding: 2rem 2.5rem;
+}
+
+.razorpay-info {
+  text-align: center;
+  background: rgba(99, 102, 241, 0.05);
   padding: 2.5rem;
-  min-height: 280px;
+  border-radius: 1.2rem;
+  border: 1px dashed rgba(99, 102, 241, 0.3);
 }
 
-/* UPI Grid */
-.upi-apps-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 1.2rem;
-  margin-bottom: 2rem;
-}
-
-.upi-app-btn {
+.rzp-logo-container {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.8rem;
-  padding: 1.2rem;
-  background: rgba(255,255,255,0.03);
-  border: 2px solid transparent;
-  border-radius: 1rem;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.upi-app-btn:hover {
-  background: rgba(255,255,255,0.06);
-  transform: translateY(-2px);
-}
-
-.upi-app-btn.selected {
-  background: rgba(251, 146, 60, 0.08);
-  border-color: #fb923c;
-}
-
-.upi-app-icon {
-  font-size: 1.8rem;
-}
-
-.upi-app-name {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #f8fafc;
-}
-
-.upi-divider {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
+  gap: 0.5rem;
   margin-bottom: 1.5rem;
-  color: #475569;
+}
+
+.rzp-logo {
+  height: 45px;
+  filter: brightness(0) invert(1);
+}
+
+.rzp-badge {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: #818cf8;
+  font-weight: 800;
+}
+
+.rzp-text {
+  color: #f8fafc;
+  font-size: 1rem;
+  line-height: 1.6;
+  margin-bottom: 2rem;
+}
+
+.payment-methods-icons {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  font-size: 2rem;
+  margin-bottom: 2rem;
+  opacity: 0.8;
+}
+
+.rzp-features {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+}
+
+.rzp-features span {
   font-size: 0.85rem;
-}
-
-.upi-divider::before, .upi-divider::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: rgba(255,255,255,0.05);
-}
-
-/* Bank Grid */
-.bank-list {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1rem;
-}
-
-.bank-btn {
+  color: #4ade80;
+  font-weight: 600;
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 1rem 1.5rem;
-  background: rgba(255,255,255,0.03);
-  border: 2px solid transparent;
-  border-radius: 0.8rem;
-  color: #f8fafc;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-weight: 500;
-}
-
-.bank-btn:hover {
-  background: rgba(255,255,255,0.06);
-}
-
-.bank-btn.selected {
-  background: rgba(251, 146, 60, 0.08);
-  border-color: #fb923c;
-}
-
-.bank-icon {
-  font-size: 1.2rem;
+  gap: 0.4rem;
 }
 
 /* Security & Pay */
@@ -243,6 +192,7 @@
   font-size: 1.1rem !important;
   letter-spacing: 0.05em;
   text-transform: uppercase;
+  box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.4);
 }
 
 /* Right Side: Summary */
@@ -255,7 +205,7 @@
 .summary-row {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 1rem;
+  margin-bottom: 1.2rem;
   font-size: 0.95rem;
 }
 
@@ -272,6 +222,12 @@
   color: #fb923c;
 }
 
+.divider {
+  height: 1px;
+  background: rgba(255,255,255,0.05);
+  margin: 1.5rem 0;
+}
+
 .summary-note {
   background: rgba(34, 197, 94, 0.1);
   color: #4ade80;
@@ -282,7 +238,7 @@
   font-weight: 600;
 }
 
-/* Modal */
+/* Modals */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -295,32 +251,71 @@
 
 .modal-box {
   background: #1e293b;
-  padding: 2.5rem;
-  border-radius: 1.5rem;
+  padding: 3rem;
+  border-radius: 2rem;
   width: 90%;
   max-width: 450px;
   text-align: center;
   border: 1px solid rgba(255,255,255,0.1);
-  box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+}
+
+.modal-icon {
+  font-size: 3.5rem;
+  margin-bottom: 1.5rem;
 }
 
 .modal-box h3 {
-  font-size: 1.5rem;
+  font-size: 1.6rem;
   margin-bottom: 1rem;
 }
 
 .modal-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-  margin-top: 2rem;
+  gap: 1.2rem;
+  margin-top: 2.5rem;
+}
+
+/* Success Card */
+.success-card {
+  max-width: 500px;
+}
+
+.check-circle {
+  width: 70px;
+  height: 70px;
+  background: #22c55e;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 1.5rem;
+  color: white;
+}
+
+.receipt-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.8rem;
+}
+
+.receipt-id {
+  background: #0f172a;
+  padding: 0.4rem 0.8rem;
+  border-radius: 0.4rem;
+  font-size: 0.85rem;
+}
+
+.mail-alert {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: rgba(251, 146, 60, 0.1);
+  border-radius: 0.8rem;
+  color: #fb923c;
+  font-size: 0.9rem;
 }
 
 @media (max-width: 992px) {
   .checkout-container {
     grid-template-columns: 1fr;
-  }
-  .order-summary {
-    position: static;
   }
 }

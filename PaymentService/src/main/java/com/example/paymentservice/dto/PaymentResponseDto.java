@@ -26,4 +26,5 @@ public class PaymentResponseDto {
     private PaymentStatus status;
     private PaymentMode paymentMode;
     private BigDecimal amount;
+    private String razorpayOrderId;
 }

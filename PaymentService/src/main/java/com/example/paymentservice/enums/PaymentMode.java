@@ -9,5 +9,6 @@ package com.example.paymentservice.enums;
 public enum PaymentMode {
     UPI,
     CARD,
-    NETBANKING
+    NETBANKING,
+    RAZORPAY
 }

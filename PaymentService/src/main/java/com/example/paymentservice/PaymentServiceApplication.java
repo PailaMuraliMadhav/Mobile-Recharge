@@ -11,8 +11,11 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
  *   Spring Boot application entry point for the Payment microservice.
  *   Enables Eureka service discovery for registration with the service registry.
  */
+import org.springframework.cloud.openfeign.EnableFeignClients;
+
 @SpringBootApplication
 @EnableDiscoveryClient
+@EnableFeignClients
 public class PaymentServiceApplication {
 
     public static void main(String[] args) {

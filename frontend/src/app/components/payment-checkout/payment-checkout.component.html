@@ -14,7 +14,7 @@
           <span class="amount-label">Mobile Recharge for</span>
           <span class="amount-mobile">+91 {{ mobileNumber }}</span>
         </div>
-        <div class="amount-value">- ₹{{ plan?.price }}</div>
+        <div class="amount-value">₹{{ plan?.price }}</div>
       </div>
 
       <!-- Error / Cancel message -->
@@ -22,86 +22,37 @@
 
       <!-- Payment Method Card -->
       <div class="card payment-card">
-        <!-- Tab Navigation -->
-        <div class="pay-tabs">
-          <button class="pay-tab" [class.active]="activeTab === 'upi'" (click)="setTab('upi')">UPI</button>
-          <button class="pay-tab" [class.active]="activeTab === 'card'" (click)="setTab('card')">Card</button>
-          <button class="pay-tab" [class.active]="activeTab === 'netbanking'" (click)="setTab('netbanking')">Net Banking</button>
+        <div class="pay-header">
+          <h3>Secure Payment</h3>
+          <p>Complete your recharge using our secure payment gateway.</p>
         </div>
 
-        <!-- UPI Tab -->
-        <div class="pay-tab-content" *ngIf="activeTab === 'upi'">
-          <div class="upi-apps-grid">
-            <button *ngFor="let app of upiApps" class="upi-app-btn"
-              [class.selected]="selectedUpiApp === app.id" (click)="selectUpiApp(app.id)">
-              <span class="upi-app-icon">{{ app.icon }}</span>
-              <span class="upi-app-name">{{ app.name }}</span>
-            </button>
-          </div>
-          <div class="upi-divider"><span>or</span></div>
-          <button class="btn btn-outline btn-sm" (click)="enableUpiInput()" *ngIf="!upiInputMode">Enter UPI ID manually</button>
-          <form [formGroup]="upiForm" *ngIf="upiInputMode" class="upi-manual-form">
-            <div class="form-group">
-              <label>UPI ID</label>
-              <input type="text" formControlName="upiId" placeholder="yourname@upi" class="form-control" />
-              <div class="field-error" *ngIf="upiId?.touched && upiId?.invalid">Enter a valid UPI ID</div>
+        <div class="pay-tab-content">
+          <div class="razorpay-info">
+            <div class="rzp-logo-container">
+              <img src="https://razorpay.com/assets/razorpay-glyph.svg" alt="Razorpay" class="rzp-logo">
+              <span class="rzp-badge">Official Payment Partner</span>
             </div>
-          </form>
-        </div>
+            <p class="rzp-text">You will be redirected to Razorpay's secure checkout popup to complete your payment via
+              <strong>UPI, Card, or Netbanking</strong>.</p>
 
-        <!-- Card Tab -->
-        <div class="pay-tab-content" *ngIf="activeTab === 'card'">
-          <form [formGroup]="cardForm">
-            <div class="form-group">
-              <label>Card Number</label>
-              <input type="text" formControlName="cardNumber" placeholder="1234 5678 9012 3456"
-                class="form-control" maxlength="19" (input)="formatCard($event)" />
-              <div class="field-error" *ngIf="cardNumber?.touched && cardNumber?.invalid">Enter a valid 16-digit card number</div>
+            <div class="payment-methods-icons">
+              <span title="UPI">📱</span>
+              <span title="Visa/Mastercard">💳</span>
+              <span title="Netbanking">🏦</span>
+              <span title="Wallets">👛</span>
             </div>
-            <div class="form-group">
-              <label>Card Holder</label>
-              <input type="text" formControlName="cardHolder" placeholder="Name on card" class="form-control" />
-              <div class="field-error" *ngIf="cardHolder?.touched && cardHolder?.invalid">Card holder name is required</div>
-            </div>
-            <div class="form-row">
-              <div class="form-group half">
-                <label>Expiry</label>
-                <input type="text" formControlName="expiry" placeholder="MM/YY"
-                  class="form-control" maxlength="5" (input)="formatExpiry($event)" />
-                <div class="field-error" *ngIf="expiry?.touched && expiry?.invalid">Invalid expiry</div>
-              </div>
-              <div class="form-group half">
-                <label>CVV</label>
-                <input type="password" formControlName="cvv" placeholder="•••"
-                  class="form-control" maxlength="4" />
-                <div class="field-error" *ngIf="cvv?.touched && cvv?.invalid">Invalid CVV</div>
-              </div>
-            </div>
-          </form>
-        </div>
 
-        <!-- Netbanking Tab -->
-        <div class="pay-tab-content" *ngIf="activeTab === 'netbanking'">
-          <div class="bank-list">
-            <button *ngFor="let bank of banks" class="bank-btn"
-              [class.selected]="selectedBank === bank.id" (click)="selectedBank = bank.id">
-              <span class="bank-icon">{{ bank.icon }}</span>
-              <span>{{ bank.name }}</span>
-            </button>
+            <div class="rzp-features">
+              <span>⚡ Instant Activation</span>
+              <span>🛡️ 256-bit Encryption</span>
+            </div>
           </div>
         </div>
-
-        <!-- Security badges -->
-        <div class="security-badges">
-          <span class="badge-item">🔒 PCI-DSS Compliant</span>
-          <span class="badge-item">🛡️ Secure SSL Encryption</span>
-        </div>
-
         <!-- Pay Button -->
-        <button class="btn btn-primary btn-block btn-lg pay-btn"
-          [disabled]="!canPay() || loading" (click)="onPayClick()">
+        <button class="btn btn-primary btn-block btn-lg pay-btn" [disabled]="loading" (click)="onPayClick()">
           <span class="spinner spinner-sm" *ngIf="loading"></span>
-          <span *ngIf="!loading">Pay ₹{{ plan?.price }}</span>
+          <span *ngIf="!loading">Proceed to Pay ₹{{ plan?.price }}</span>
           <span *ngIf="loading">Processing...</span>
         </button>
       </div>
@@ -111,10 +62,13 @@
     <div class="checkout-right">
       <div class="card order-summary">
         <h3 class="card-title">Order Summary</h3>
-        <div class="summary-row"><span class="text-muted">Mobile</span><span class="font-semibold">{{ mobileNumber }}</span></div>
-        <div class="summary-row"><span class="text-muted">Plan</span><span class="font-semibold">{{ plan?.name }}</span></div>
+        <div class="summary-row"><span class="text-muted">Mobile</span><span class="font-semibold">+91 {{ mobileNumber
+            }}</span></div>
+        <div class="summary-row"><span class="text-muted">Operator</span><span class="font-semibold">{{ plan?.name
+            }}</span></div>
         <div class="summary-row"><span class="text-muted">Data</span><span>{{ plan?.data }}</span></div>
-        <div class="summary-row"><span class="text-muted">Validity</span><span>{{ plan?.validityDays }} days</span></div>
+        <div class="summary-row"><span class="text-muted">Validity</span><span>{{ plan?.validityDays }} days</span>
+        </div>
         <div class="summary-row" *ngIf="plan?.description">
           <span class="text-muted">Benefits</span><span class="text-sm">{{ plan?.description }}</span>
         </div>
@@ -129,33 +83,21 @@
 
   </div>
 
-  <!-- Confirmation Modal -->
-  <div class="modal-overlay" *ngIf="showConfirm">
-    <div class="modal-box">
-      <h3>Confirm Payment</h3>
-      <p>You are about to pay <strong>₹{{ plan?.price }}</strong> for {{ plan?.name }}.</p>
-      <p class="text-muted">Mobile: {{ mobileNumber }}</p>
-      <div class="modal-actions">
-        <button class="btn btn-outline" (click)="cancelPay()">Cancel</button>
-        <button class="btn btn-primary" (click)="confirmPay()">
-          <span class="spinner spinner-sm" *ngIf="loading"></span>
-          Confirm & Pay
-        </button>
-      </div>
-    </div>
-  </div>
 
   <!-- Success Modal -->
   <div class="modal-overlay" *ngIf="paymentSuccess">
     <div class="modal-box success-card">
       <div class="success-header">
         <div class="check-circle">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"
+            stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
         </div>
         <h2 class="success-title">Recharge Successful!</h2>
         <p class="success-subtitle">We've processed your payment for +91 {{ mobileNumber }}</p>
       </div>
-      
+
       <div class="success-body">
         <div class="receipt-row">
           <span class="receipt-label">Amount Paid</span>

@@ -11,4 +11,5 @@ export interface PaymentResponseDto {
   status: 'PENDING' | 'SUCCESS' | 'FAILED';
   paymentMode: string;
   amount: number;
+  razorpayOrderId?: string;
 }

@@ -17,17 +17,9 @@ import java.util.Optional;
 @Repository
 public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
-    /* ================================================================
-     * METHOD: findByTransactionId
-     * DESCRIPTION:
-     *   Retrieves a payment record by its unique transaction ID.
-     * ================================================================ */
     Optional<Payment> findByTransactionId(String transactionId);
 
-    /* ================================================================
-     * METHOD: findByUserId
-     * DESCRIPTION:
-     *   Retrieves all payment records associated with the given user ID.
-     * ================================================================ */
     List<Payment> findByUserId(Long id);
+
+    Optional<Payment> findByRazorpayOrderId(String razorpayOrderId);
 }

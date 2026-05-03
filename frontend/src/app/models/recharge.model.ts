@@ -16,5 +16,6 @@ export interface RechargeResponse {
   status: 'PENDING' | 'SUCCESS' | 'FAILED';
   paymentMode: string;
   transactionId: string;
+  razorpayOrderId?: string;
   createdAt: string;
 }

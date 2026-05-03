@@ -45,8 +45,17 @@ public class Payment {
     @Column(name = "payment_mode", nullable = false, length = 20)
     private PaymentMode paymentMode;
 
-    @Column(name = "transaction_id", nullable = false, unique = true, length = 100)
+    @Column(name = "transaction_id", nullable = true, unique = true, length = 100)
     private String transactionId;
+
+    @Column(name = "razorpay_order_id", length = 100)
+    private String razorpayOrderId;
+
+    @Column(name = "razorpay_payment_id", length = 100)
+    private String razorpayPaymentId;
+
+    @Column(name = "razorpay_signature", length = 200)
+    private String razorpaySignature;
 
     @Column(length = 500)
     private String description;

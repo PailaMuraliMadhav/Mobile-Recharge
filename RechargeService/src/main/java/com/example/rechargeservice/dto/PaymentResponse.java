@@ -19,4 +19,6 @@ public class PaymentResponse {
 
     private BigDecimal amount;
 
+    private String razorpayOrderId;
+
 }

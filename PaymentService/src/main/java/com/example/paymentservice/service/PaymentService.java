@@ -6,8 +6,13 @@ import com.example.paymentservice.enums.PaymentMode;
 import com.example.paymentservice.enums.PaymentStatus;
 import com.example.paymentservice.exception.NotFoundException;
 import com.example.paymentservice.repository.PaymentRepository;
+import com.razorpay.Order;
+import com.razorpay.RazorpayClient;
+import com.razorpay.Utils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.json.JSONObject;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +32,11 @@ import java.util.UUID;
 public class PaymentService {
 
     private final PaymentRepository paymentRepository;
+    private final RazorpayClient razorpayClient;
+    private final com.example.paymentservice.feignclients.RechargeClient rechargeClient;
+
+    @Value("${razorpay.key.secret}")
+    private String keySecret;
 
     // ─────────────────────────────────────────────────────────────────────────
     // PAYMENT PROCESSING
@@ -37,6 +47,7 @@ public class PaymentService {
      * DESCRIPTION:
      *   Entry point for all payment requests.
      *   Processes UPI, CARD, and NETBANKING as mock gateway payments.
+     *   Processes RAZORPAY by creating a real Razorpay Order.
      * ================================================================ */
     @Transactional
     public PaymentResponseDto processPayment(PaymentRequestDto request) {
@@ -51,7 +62,97 @@ public class PaymentService {
             throw new IllegalArgumentException("Invalid payment mode: " + request.getPaymentMode());
         }
 
+        if (mode == PaymentMode.RAZORPAY) {
+            return processRazorpayOrder(request);
+        }
+
         return processGatewayPayment(request, mode);
+    }
+
+    private PaymentResponseDto processRazorpayOrder(PaymentRequestDto request) {
+        try {
+            JSONObject orderRequest = new JSONObject();
+            orderRequest.put("amount", request.getAmount().multiply(new java.math.BigDecimal(100)).intValue()); // Paisa
+            orderRequest.put("currency", "INR");
+            orderRequest.put("receipt", "txn_" + UUID.randomUUID().toString().substring(0, 8));
+
+            Order order = razorpayClient.orders.create(orderRequest);
+            String orderId = order.get("id");
+
+            Payment payment = Payment.builder()
+                    .rechargeId(request.getRechargeId())
+                    .userId(request.getUserId())
+                    .amount(request.getAmount())
+                    .status(PaymentStatus.PENDING)
+                    .paymentMode(PaymentMode.RAZORPAY)
+                    .razorpayOrderId(orderId)
+                    .transactionId(orderId) // Set as placeholder for NOT NULL constraint
+                    .description(request.getDescription())
+                    .build();
+
+            paymentRepository.save(payment);
+
+            return PaymentResponseDto.builder()
+                    .message("Order created")
+                    .razorpayOrderId(orderId)
+                    .status(PaymentStatus.PENDING)
+                    .paymentMode(PaymentMode.RAZORPAY)
+                    .amount(request.getAmount())
+                    .build();
+
+        } catch (Exception e) {
+            log.error("Error creating Razorpay order: {}", e.getMessage());
+            throw new RuntimeException("Could not create Razorpay order");
+        }
+    }
+
+    @Transactional
+    public PaymentResponseDto verifyRazorpayPayment(RazorpayVerificationRequest request) {
+        try {
+            JSONObject attributes = new JSONObject();
+            attributes.put("razorpay_order_id", request.getRazorpayOrderId());
+            attributes.put("razorpay_payment_id", request.getRazorpayPaymentId());
+            attributes.put("razorpay_signature", request.getRazorpaySignature());
+
+            boolean isValid = Utils.verifyPaymentSignature(attributes, keySecret);
+
+            if (!isValid) {
+                throw new RuntimeException("Invalid Razorpay signature");
+            }
+
+            Payment payment = paymentRepository.findByRazorpayOrderId(request.getRazorpayOrderId())
+                    .orElseThrow(() -> new NotFoundException("Order not found: " + request.getRazorpayOrderId()));
+
+            payment.setStatus(PaymentStatus.SUCCESS);
+            payment.setRazorpayPaymentId(request.getRazorpayPaymentId());
+            payment.setRazorpaySignature(request.getRazorpaySignature());
+            payment.setTransactionId(request.getRazorpayPaymentId()); // Use payment_id as transaction_id
+            paymentRepository.save(payment);
+
+            // Notify Recharge Service
+            try {
+                rechargeClient.updatePaymentStatus(PaymentVerificationUpdateRequest.builder()
+                        .rechargeId(payment.getRechargeId())
+                        .transactionId(payment.getTransactionId())
+                        .paymentMode("RAZORPAY")
+                        .status("SUCCESS")
+                        .build());
+            } catch (Exception e) {
+                log.error("Failed to update recharge status: {}", e.getMessage());
+            }
+
+            return PaymentResponseDto.builder()
+                    .message("Payment verified successfully")
+                    .transactionId(payment.getTransactionId())
+                    .status(PaymentStatus.SUCCESS)
+                    .paymentMode(PaymentMode.RAZORPAY)
+                    .amount(payment.getAmount())
+                    .build();
+
+        } catch (Exception e) {
+            log.error("Payment verification failed: {}", e.getMessage());
+            throw new RuntimeException("Payment verification failed");
+        }
     }
 
     /* ================================================================

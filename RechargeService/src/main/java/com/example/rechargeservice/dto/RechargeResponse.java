@@ -31,5 +31,6 @@ public class RechargeResponse {
     private RechargeStatus status;
     private String paymentMode;
     private String transactionId;
+    private String razorpayOrderId;
     private LocalDateTime createdAt;
 }

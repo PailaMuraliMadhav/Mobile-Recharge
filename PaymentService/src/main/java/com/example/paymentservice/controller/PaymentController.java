@@ -33,6 +33,13 @@ public class PaymentController {
         return ResponseEntity.ok(paymentService.processPayment(request));
     }
 
+    @PostMapping("/verify")
+    @Operation(summary = "Verify Razorpay payment")
+    public ResponseEntity<PaymentResponseDto> verifyPayment(
+            @RequestBody RazorpayVerificationRequest request) {
+        return ResponseEntity.ok(paymentService.verifyRazorpayPayment(request));
+    }
+
     /* ================================================================
      * METHOD: getTransactionStatus
      * DESCRIPTION:

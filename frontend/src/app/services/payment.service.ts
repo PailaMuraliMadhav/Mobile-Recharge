@@ -21,11 +21,11 @@ export class PaymentService {
   getPaymentHistory(userId: number): Observable<PaymentResponseDto[]> {
     return this.http.get<PaymentResponseDto[]>(`${this.API}/api/payments/user/${userId}`);
   }
-  createRazorpayOrder(request: any): Observable<any> {
-    return this.http.post<any>(`${this.API}/api/payments/razorpay/create-order`, request);
+  createRazorpayOrder(request: PaymentRequestDto): Observable<PaymentResponseDto> {
+    return this.http.post<PaymentResponseDto>(`${this.API}/api/payments/process`, request);
   }
 
   verifyRazorpayPayment(request: any): Observable<PaymentResponseDto> {
-    return this.http.post<PaymentResponseDto>(`${this.API}/api/payments/razorpay/verify`, request);
+    return this.http.post<PaymentResponseDto>(`${this.API}/api/payments/verify`, request);
   }
 }

@@ -154,12 +154,19 @@ public class RechargeService {
                 throw new BadRequestException("Payment service returned empty response");
             }
             recharge.setTransactionId(paymentResponse.getTransactionId());
+            recharge.setRazorpayOrderId(paymentResponse.getRazorpayOrderId());
 
         } catch (Exception ex) {
             recharge.setStatus(RechargeStatus.FAILED);
             rechargeRepository.save(recharge);
             sendNotification(recharge);
             throw new BadRequestException("Payment gateway unavailable. Please try again later.");
+        }
+
+        if (paymentResponse.getStatus() != null && paymentResponse.getStatus().toString().equalsIgnoreCase("PENDING")) {
+            recharge.setStatus(RechargeStatus.PENDING);
+            rechargeRepository.save(recharge);
+            return modelMapper.map(recharge, RechargeResponse.class);
         }
 
         if (paymentResponse.getStatus() == null || !paymentResponse.getStatus().toString().equalsIgnoreCase("SUCCESS")) {

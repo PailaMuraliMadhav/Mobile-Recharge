@@ -289,6 +289,8 @@ services:
       - "SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}"
       - "SPRING_RABBITMQ_HOST=rabbitmq"
       - "SERVER_PORT=8084"
+      - "RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID}"
+      - "RAZORPAY_KEY_SECRET=${RAZORPAY_KEY_SECRET}"
       - "MANAGEMENT_ZIPKIN_TRACING_ENDPOINT=http://zipkin:9411/api/v2/spans"
       - "JAVA_OPTS=-Xms64m -Xmx256m -XX:MaxRAMPercentage=70.0 -XX:+UseG1GC -Dspring.jmx.enabled=false"
     deploy:

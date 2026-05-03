@@ -51,6 +51,9 @@ public class Recharge {
     @Column(length = 100)
     private String transactionId;
 
+    @Column(name = "razorpay_order_id", length = 100)
+    private String razorpayOrderId;
+
     private String operatorName;
     private String planName;
     private String planDescription;

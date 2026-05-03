@@ -108,27 +108,17 @@
         </div>
       </div>
 
-      <!-- Payment Modes -->
-      <div class="dashboard-card">
-        <h3 class="card-title">Payment Methods</h3>
-        <div class="stats-list">
-          <div class="stats-item" *ngFor="let pm of getPaymentStats()">
-            <span class="stats-label">{{ pm.mode }}</span>
-            <span class="stats-value">{{ pm.count }}</span>
-            <div class="progress-bar">
-              <div class="progress-fill payment-fill" [style.width.%]="(pm.count / totalRecharges) * 100"></div>
-            </div>
-          </div>
-        </div>
-      </div>
 
-      <!-- Popular Plans -->
+
       <div class="dashboard-card">
         <h3 class="card-title">Popular Plans</h3>
         <div class="stats-list">
           <div class="stats-item" *ngFor="let plan of getTopPlans()">
             <span class="stats-label">{{ plan.name }}</span>
             <span class="stats-value">{{ plan.count }}</span>
+            <div class="progress-bar">
+              <div class="progress-fill plan-fill" [style.width.%]="(plan.count / totalRecharges) * 100"></div>
+            </div>
           </div>
         </div>
       </div>
