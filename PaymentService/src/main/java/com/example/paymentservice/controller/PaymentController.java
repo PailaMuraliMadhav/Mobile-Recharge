@@ -19,29 +19,6 @@ public class PaymentController {
 
     private final PaymentService paymentService;
 
-    /* ================================================================
-     * METHOD: createRazorpayOrder
-     * DESCRIPTION:
-     *   Creates an order in Razorpay for a recharge.
-     * ================================================================ */
-    @PostMapping("/razorpay/create-order")
-    @Operation(summary = "Create a Razorpay order")
-    public ResponseEntity<RazorpayOrderResponse> createRazorpayOrder(
-            @RequestBody RazorpayOrderRequest request) {
-        return ResponseEntity.ok(paymentService.createRazorpayOrder(request));
-    }
-
-    /* ================================================================
-     * METHOD: verifyRazorpayPayment
-     * DESCRIPTION:
-     *   Verifies a Razorpay payment signature.
-     * ================================================================ */
-    @PostMapping("/razorpay/verify")
-    @Operation(summary = "Verify a Razorpay payment")
-    public ResponseEntity<PaymentResponseDto> verifyRazorpayPayment(
-            @RequestBody RazorpayVerifyRequest request) {
-        return ResponseEntity.ok(paymentService.verifyRazorpayPayment(request));
-    }
 
     /* ================================================================
      * METHOD: processPayment

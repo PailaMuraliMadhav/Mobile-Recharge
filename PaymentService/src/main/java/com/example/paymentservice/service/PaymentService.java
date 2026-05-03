@@ -6,19 +6,11 @@ import com.example.paymentservice.enums.PaymentMode;
 import com.example.paymentservice.enums.PaymentStatus;
 import com.example.paymentservice.exception.NotFoundException;
 import com.example.paymentservice.repository.PaymentRepository;
-import com.razorpay.Order;
-import com.razorpay.RazorpayClient;
-import com.razorpay.RazorpayException;
-import com.razorpay.Utils;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.json.JSONObject;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -35,19 +27,6 @@ import java.util.UUID;
 public class PaymentService {
 
     private final PaymentRepository paymentRepository;
-
-    @Value("${razorpay.key.id}")
-    private String razorpayKeyId;
-
-    @Value("${razorpay.key.secret}")
-    private String razorpayKeySecret;
-
-    private RazorpayClient razorpayClient;
-
-    @PostConstruct
-    public void init() throws RazorpayException {
-        this.razorpayClient = new RazorpayClient(razorpayKeyId, razorpayKeySecret);
-    }
 
     // ─────────────────────────────────────────────────────────────────────────
     // PAYMENT PROCESSING
@@ -139,92 +118,5 @@ public class PaymentService {
                         .message("Payment record")
                         .build())
                 .toList();
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // RAZORPAY INTEGRATION
-    // ─────────────────────────────────────────────────────────────────────────
-
-    /**
-     * Creates a Razorpay Order.
-     */
-    public RazorpayOrderResponse createRazorpayOrder(RazorpayOrderRequest request) {
-        try {
-            JSONObject orderRequest = new JSONObject();
-            // Razorpay expects amount in paise (1 INR = 100 paise)
-            int amountInPaise = request.getAmount().multiply(new BigDecimal(100)).intValue();
-            
-            orderRequest.put("amount", amountInPaise);
-            orderRequest.put("currency", request.getCurrency() != null ? request.getCurrency() : "INR");
-            orderRequest.put("receipt", "recharge_" + request.getRechargeId());
-            
-            Order order = razorpayClient.orders.create(orderRequest);
-            
-            log.info("Razorpay order created: {} for recharge: {}", order.get("id"), request.getRechargeId());
-            
-            return RazorpayOrderResponse.builder()
-                    .orderId(order.get("id"))
-                    .keyId(razorpayKeyId)
-                    .amount(amountInPaise)
-                    .currency(order.get("currency"))
-                    .build();
-                    
-        } catch (RazorpayException e) {
-            log.error("Error creating Razorpay order: {}", e.getMessage());
-            throw new RuntimeException("Failed to create Razorpay order: " + e.getMessage());
-        }
-    }
-
-    /**
-     * Verifies the Razorpay payment signature and saves the payment record.
-     */
-    @Transactional
-    public PaymentResponseDto verifyRazorpayPayment(RazorpayVerifyRequest request) {
-        try {
-            // Verify Signature
-            JSONObject options = new JSONObject();
-            options.put("razorpay_order_id", request.getRazorpayOrderId());
-            options.put("razorpay_payment_id", request.getRazorpayPaymentId());
-            options.put("razorpay_signature", request.getRazorpaySignature());
-
-            boolean isValid = Utils.verifyPaymentSignature(options, razorpayKeySecret);
-
-            if (!isValid) {
-                log.error("Invalid Razorpay signature for order: {}", request.getRazorpayOrderId());
-                throw new RuntimeException("Invalid payment signature");
-            }
-
-            // If valid, save the payment record
-            // Fetch payment details from Razorpay to get the amount if needed, 
-            // but here we trust the backend-to-backend verification.
-            
-            com.razorpay.Payment rzpPayment = razorpayClient.payments.fetch(request.getRazorpayPaymentId());
-            BigDecimal amount = new BigDecimal(rzpPayment.get("amount").toString()).divide(new BigDecimal(100));
-
-            Payment payment = Payment.builder()
-                    .rechargeId(request.getRechargeId())
-                    .userId(request.getUserId())
-                    .amount(amount)
-                    .status(PaymentStatus.SUCCESS)
-                    .paymentMode(PaymentMode.ONLINE) // or specific mode if identifiable
-                    .transactionId(request.getRazorpayPaymentId())
-                    .description("Razorpay Payment for Recharge #" + request.getRechargeId())
-                    .build();
-
-            paymentRepository.save(payment);
-            log.info("Razorpay payment verified and saved. txn={}", request.getRazorpayPaymentId());
-
-            return PaymentResponseDto.builder()
-                    .message("Payment verified successfully")
-                    .transactionId(request.getRazorpayPaymentId())
-                    .status(PaymentStatus.SUCCESS)
-                    .paymentMode(PaymentMode.ONLINE)
-                    .amount(amount)
-                    .build();
-
-        } catch (RazorpayException e) {
-            log.error("Error verifying Razorpay payment: {}", e.getMessage());
-            throw new RuntimeException("Failed to verify Razorpay payment: " + e.getMessage());
-        }
     }
 }
